@@ -700,6 +700,60 @@
     .footer-legal { display: flex; gap: 16px; }
 
     /* ================================================
+       UPVOTE ANIMATION
+    ================================================ */
+    @keyframes upvote-pop {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.35); }
+      60%  { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+    @keyframes float-plus {
+      0%   { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-28px); }
+    }
+    .upvote-btn { position: relative; transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
+    .upvote-btn.voted {
+      background: var(--accent-glow) !important;
+      color: var(--accent-2) !important;
+      border-color: var(--accent-ring) !important;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .upvote-btn.popping { animation: upvote-pop 0.38s cubic-bezier(.36,.07,.19,.97); }
+
+    /* ================================================
+       PROFILE DROPDOWN
+    ================================================ */
+    .profile-dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      background: var(--bg-2); border: 1px solid var(--border-2);
+      border-radius: var(--r-lg); padding: 18px;
+      min-width: 240px; box-shadow: var(--shadow-lg);
+      z-index: 999;
+    }
+    .profile-dropdown h4 { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 12px; }
+    .profile-dropdown .fi {
+      width: 100%; padding: 9px 12px; border-radius: var(--r);
+      background: var(--bg-input); border: 1px solid var(--border-2);
+      color: var(--text-1); font-size: 13px; margin-bottom: 10px;
+    }
+    .profile-dropdown .fsub-sm {
+      width: 100%; padding: 9px; border-radius: var(--r);
+      background: var(--accent); color: #000; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .pd-pos { position: relative; display: inline-block; }
+
+    /* ================================================
+       DELETE BUTTON
+    ================================================ */
+    .del-btn {
+      background: none; border: none; color: var(--text-3); font-size: 13px;
+      cursor: pointer; padding: 3px 8px; border-radius: var(--r);
+      transition: color 0.15s, background 0.15s;
+    }
+    .del-btn:hover { color: var(--red); background: var(--red-s); }
+
+    /* ================================================
        RESPONSIVE
     ================================================ */
     @media (max-width: 1024px) {
@@ -758,7 +812,15 @@
     </div>
     <!-- Logged-in state -->
     <div class="nav-auth-user hidden" id="nav-user">
-      <div class="nav-avatar" id="nav-avatar" onclick="openDropdown()" title="Account"></div>
+      <div class="pd-pos">
+        <div class="nav-avatar" id="nav-avatar" onclick="openDropdown()" title="Account settings"></div>
+        <div class="profile-dropdown" id="profile-dropdown" style="display:none">
+          <h4>&#128100; Display name</h4>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:10px">This is how you appear in the community. Leave blank to use your account name.</p>
+          <input class="fi" id="pd-name" placeholder="Your display name" />
+          <button class="fsub-sm" onclick="saveDisplayName()">Save</button>
+        </div>
+      </div>
       <span class="nav-username" id="nav-username"></span>
       <button class="btn-ghost" onclick="signOut()">Sign out</button>
     </div>
@@ -1195,6 +1257,7 @@ const SUPABASE_KEY  = 'sb_publishable_gPLelpy3MiyR28eeepqh-A_Q17Q0ABS';
 
 let sb = null;
 let currentUser = null;
+let currentProfile = null;
 
 function initSupabase() {
   try {
@@ -1219,13 +1282,59 @@ function updateAuthUI() {
   if (currentUser) {
     guest.classList.add('hidden');
     user.classList.remove('hidden');
+    loadProfile();
     const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'You';
     avatar.textContent = name.charAt(0).toUpperCase();
     username.textContent = name;
   } else {
+    currentProfile = null;
     guest.classList.remove('hidden');
     user.classList.add('hidden');
   }
+}
+
+async function loadProfile() {
+  if (!sb || !currentUser) return;
+  const { data } = await sb.from('profiles').select('display_name').eq('id', currentUser.id).maybeSingle();
+  currentProfile = data || {};
+  if (data?.display_name) {
+    const avatar = document.getElementById('nav-avatar');
+    const username = document.getElementById('nav-username');
+    if (avatar) avatar.textContent = data.display_name.charAt(0).toUpperCase();
+    if (username) username.textContent = data.display_name;
+  }
+  const pdInput = document.getElementById('pd-name');
+  if (pdInput && data?.display_name) pdInput.value = data.display_name;
+}
+
+function openDropdown() {
+  const dd = document.getElementById('profile-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    document.addEventListener('click', function closePd(e) {
+      if (!dd.contains(e.target) && e.target.id !== 'nav-avatar') {
+        dd.style.display = 'none';
+        document.removeEventListener('click', closePd);
+      }
+    }, { capture: true });
+  }
+}
+
+async function saveDisplayName() {
+  if (!sb || !currentUser) return;
+  const name = (document.getElementById('pd-name')?.value || '').trim();
+  const { error } = await sb.from('profiles').upsert({ id: currentUser.id, display_name: name || null }, { onConflict: 'id' });
+  if (error) { toast('Failed to save. Try again.'); return; }
+  currentProfile = { ...currentProfile, display_name: name || null };
+  const avatar = document.getElementById('nav-avatar');
+  const username = document.getElementById('nav-username');
+  const displayName = name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'You';
+  if (avatar) avatar.textContent = displayName.charAt(0).toUpperCase();
+  if (username) username.textContent = displayName;
+  document.getElementById('profile-dropdown').style.display = 'none';
+  toast('Display name saved!');
 }
 
 async function doSignup() {
@@ -1797,8 +1906,9 @@ async function openThread(threadId) {
         '<span style="font-size:13px;color:var(--text-2);font-weight:600">' + escHtml(name) + '</span>' +
       '</div>' +
       '<div style="font-size:15px;color:var(--text-2);line-height:1.75;white-space:pre-wrap">' + escHtml(thread.content) + '</div>' +
-      '<div style="margin-top:20px">' +
-        '<button onclick="upvoteThread(\'' + thread.id + '\')" style="background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-pill);padding:7px 16px;color:var(--text-1);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">&#9650; <span id="upvote-thread-count">' + (thread.upvotes_count || 0) + '</span> Upvote</button>' +
+      '<div style="margin-top:20px;display:flex;align-items:center;gap:10px">' +
+        '<button id="upvote-btn-' + thread.id + '" class="upvote-btn" onclick="upvoteThread(\'' + thread.id + '\')" style="background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-pill);padding:7px 16px;color:var(--text-1);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">&#9650; <span id="upvote-thread-count">' + (thread.upvotes_count || 0) + '</span> Upvote</button>' +
+        (currentUser && currentUser.id === thread.user_id ? '<button class="del-btn" onclick="deleteThread(\'' + thread.id + '\')">&#128465; Delete thread</button>' : '') +
       '</div>' +
     '</div>';
   const repliesEl = document.getElementById('thread-replies-content');
@@ -1807,11 +1917,13 @@ async function openThread(threadId) {
   } else {
     repliesEl.innerHTML = posts.map(function(p) {
       const pName = p.author_name || (p.author_email ? p.author_email.split('@')[0] : 'Anonymous');
-      return '<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px 24px;margin-bottom:10px">' +
+      const isOwn = currentUser && currentUser.id === p.user_id;
+      return '<div id="reply-' + p.id + '" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px 24px;margin-bottom:10px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
           '<div class="fp-avatar" style="background:' + avatarColor(pName) + ';width:28px;height:28px;font-size:11px">' + pName.charAt(0).toUpperCase() + '</div>' +
           '<span style="font-size:13px;font-weight:600;color:var(--text-1)">' + escHtml(pName) + '</span>' +
           '<span style="font-size:12px;color:var(--text-3)">' + timeAgo(p.created_at) + '</span>' +
+          (isOwn ? '<button class="del-btn" style="margin-left:auto" onclick="deleteReply(\'' + p.id + '\')">&#128465;</button>' : '') +
         '</div>' +
         '<div style="font-size:14px;color:var(--text-2);line-height:1.7;white-space:pre-wrap">' + escHtml(p.content) + '</div>' +
       '</div>';
@@ -1832,15 +1944,44 @@ function closeThread() {
 
 async function upvoteThread(threadId) {
   if (!currentUser) { openAuth('signup'); return; }
+  var btn = document.getElementById('upvote-btn-' + threadId);
   var countEl = document.getElementById('upvote-thread-count');
   var res = await sb.from('upvotes').select('id').eq('user_id', currentUser.id).eq('thread_id', threadId).maybeSingle();
   if (res.data) {
     await sb.from('upvotes').delete().eq('id', res.data.id);
     if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+    if (btn) btn.classList.remove('voted');
   } else {
     await sb.from('upvotes').insert({ user_id: currentUser.id, thread_id: threadId });
     if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+    if (btn) {
+      btn.classList.add('voted', 'popping');
+      btn.addEventListener('animationend', function() { btn.classList.remove('popping'); }, { once: true });
+      var plus = document.createElement('span');
+      plus.textContent = '+1';
+      plus.style.cssText = 'position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--accent-2);pointer-events:none;animation:float-plus 0.7s ease forwards';
+      btn.appendChild(plus);
+      setTimeout(function() { plus.remove(); }, 700);
+    }
   }
+}
+
+async function deleteThread(threadId) {
+  if (!currentUser || !confirm('Delete this thread? This cannot be undone.')) return;
+  const { error } = await sb.from('threads').update({ deleted_at: new Date().toISOString() }).eq('id', threadId).eq('user_id', currentUser.id);
+  if (error) { toast('Failed to delete. Try again.'); return; }
+  toast('Thread deleted.');
+  closeThread();
+  loadThreads(_forumCategory);
+}
+
+async function deleteReply(postId) {
+  if (!currentUser || !confirm('Delete this reply?')) return;
+  const { error } = await sb.from('posts').update({ deleted_at: new Date().toISOString() }).eq('id', postId).eq('user_id', currentUser.id);
+  if (error) { toast('Failed to delete. Try again.'); return; }
+  const el = document.getElementById('reply-' + postId);
+  if (el) el.remove();
+  toast('Reply deleted.');
 }
 
 async function submitReply() {
@@ -1850,7 +1991,7 @@ async function submitReply() {
   if (!content) { toast('Please write something first.'); return; }
   var btn = document.getElementById('reply-submit-btn');
   btn.disabled = true; btn.textContent = 'Posting…';
-  var name = (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
+  var name = (currentProfile && currentProfile.display_name) || (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
   var err = (await sb.from('posts').insert({ thread_id: _currentThreadId, user_id: currentUser.id, content: content, author_name: name, author_email: currentUser.email })).error;
   btn.disabled = false; btn.textContent = 'Post reply →';
   if (err) { toast('Failed to post reply. Try again.'); return; }
@@ -1883,7 +2024,7 @@ async function submitNewThread() {
   if (!content) { toast('Please write something.'); return; }
   var btn = document.getElementById('nt-submit');
   btn.disabled = true; btn.textContent = 'Posting…';
-  var name = (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
+  var name = (currentProfile && currentProfile.display_name) || (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
   var res = await sb.from('threads').insert({ user_id: currentUser.id, title: title, content: content, category: category, author_name: name, author_email: currentUser.email }).select().single();
   if (res.error) { btn.disabled = false; btn.textContent = 'Post to community →'; toast('Failed to post. Try again.'); return; }
   closeOverlay('gen-overlay');
