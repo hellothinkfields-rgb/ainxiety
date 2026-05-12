@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ainxiety &#8212; navigate the AI world without losing your mind</title>
+  <meta name="description" content="Your guide to surviving (and thriving) in the age of AI. Job risk tools, curated news, skill-building tutorials, and a community of people figuring it out." />
+
+  <!-- Geist font (Vercel's typeface) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ================================================
+       SUPABASE CONFIG &#8212; replace these two values
+       1. Go to supabase.com &#8594; New project
+       2. Settings &#8594; API &#8594; copy Project URL + anon key
+    ================================================ */
+
+    /* ================================================
+       DESIGN TOKENS &#8212; Warm human palette
+    ================================================ */
+    :root {
+      /* Backgrounds &#8212; warm dark, not cold blue-black */
+      --bg-0:        #0d0b09;
+      --bg-1:        #141210;
+      --bg-2:        #1c1917;
+      --bg-3:        #252118;
+      --bg-input:    #1f1c18;
+      --bg-hover:    #2a2520;
+
+      /* Borders */
+      --border:      #2e2b26;
+      --border-2:    #3d3830;
+
+      /* Text */
+      --text-1:      #f5f0e8;
+      --text-2:      #a8998a;
+      --text-3:      #675c50;
+
+      /* Accent &#8212; warm amber/gold */
+      --accent:      #e8a045;
+      --accent-2:    #f0b866;
+      --accent-glow: rgba(232, 160, 69, 0.14);
+      --accent-ring: rgba(232, 160, 69, 0.25);
+
+      /* Semantic colours */
+      --red:         #f05a5a;
+      --red-s:       rgba(240, 90, 90, 0.12);
+      --orange:      #e87c3e;
+      --orange-s:    rgba(232, 124, 62, 0.12);
+      --yellow:      #d4a839;
+      --yellow-s:    rgba(212, 168, 57, 0.12);
+      --green:       #4caf87;
+      --green-s:     rgba(76, 175, 135, 0.12);
+      --blue:        #5b9bd5;
+      --blue-s:      rgba(91, 155, 213, 0.1);
+      --purple:      #9b7dff;
+      --purple-s:    rgba(155, 125, 255, 0.12);
+
+      /* Typography */
+      --font:   'Geist', system-ui, -apple-system, sans-serif;
+      --mono:   'Geist Mono', 'Courier New', monospace;
+
+      /* Spacing & shape */
+      --r:     10px;
+      --r-lg:  18px;
+      --r-xl:  28px;
+      --r-pill: 100px;
+      --shadow:    0 2px 16px rgba(0,0,0,0.35);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.55);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    /* ================================================
+       RESET & BASE
+    ================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg-0);
+      color: var(--text-1);
+      line-height: 1.65;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent-2); text-decoration: none; }
+    a:hover { color: var(--text-1); }
+    button { font-family: var(--font); cursor: pointer; border: none; outline: none; }
+    input, textarea, select { font-family: var(--font); outline: none; }
+    ::selection { background: var(--accent); color: #000; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-0); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+    /* ================================================
+       UTILITY
+    ================================================ */
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+    /* ================================================
+       NAV
+    ================================================ */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      height: 60px;
+      background: rgba(13, 11, 9, 0.88);
+      backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 28px; gap: 8px;
+    }
+    .nav-brand {
+      font-size: 19px; font-weight: 800; letter-spacing: -0.4px;
+      cursor: pointer; user-select: none; margin-right: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-brand-a { color: var(--accent-2); }
+    .nav-links { display: flex; align-items: center; gap: 2px; flex: 1; }
+    .nav-btn {
+      padding: 6px 13px; border-radius: var(--r);
+      font-size: 13.5px; font-weight: 500;
+      color: var(--text-2); background: none; border: none;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .nav-btn:hover { color: var(--text-1); background: var(--bg-2); }
+    .nav-btn.active { color: var(--text-1); background: var(--bg-2); }
+    .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .nav-auth-guest { display: flex; align-items: center; gap: 8px; }
+    .nav-auth-user { display: flex; align-items: center; gap: 10px; }
+    .nav-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-glow); border: 1.5px solid var(--accent-ring);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--accent-2); cursor: pointer;
+    }
+    .nav-username { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .btn-ghost {
+      padding: 7px 16px; border-radius: var(--r);
+      background: transparent; border: 1px solid var(--border-2);
+      color: var(--text-2); font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .btn-ghost:hover { color: var(--text-1); border-color: var(--border-2); background: var(--bg-2); }
+    .btn-primary {
+      padding: 9px 20px; border-radius: var(--r);
+      background: var(--accent); color: #000;
+      font-size: 13.5px; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.18s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .btn-primary-lg {
+      padding: 13px 28px; border-radius: var(--r-lg);
+      background: var(--accent); color: #000;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary-lg:hover { background: var(--accent-2); transform: translateY(-2px); box-shadow: 0 6px 24px var(--accent-ring); }
+    .btn-secondary-lg {
+      padding: 13px 28px; border-radius: var(--r-lg);
+      background: var(--bg-2); color: var(--text-1);
+      border: 1px solid var(--border-2);
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-secondary-lg:hover { background: var(--bg-3); border-color: var(--border-2); transform: translateY(-1px); }
+    .mobile-menu-btn { display: none; background: none; color: var(--text-2); font-size: 20px; }
+
+    /* ================================================
+       PAGE SYSTEM
+    ================================================ */
+    .page { display: none; min-height: 100vh; padding-top: 60px; }
+    .page.active { display: block; }
+
+    /* ================================================
+       HOME &#8212; HERO
+    ================================================ */
+    .hero {
+      padding: 96px 24px 80px;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero-noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px;
+    }
+    .hero-glow {
+      position: absolute; top: -160px; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 420px;
+      background: radial-gradient(ellipse, rgba(232,160,69,0.12) 0%, transparent 68%);
+      pointer-events: none;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--accent-glow); border: 1px solid var(--accent-ring);
+      color: var(--accent-2); font-size: 12.5px; font-weight: 600;
+      padding: 5px 13px; border-radius: var(--r-pill);
+      margin-bottom: 28px; letter-spacing: 0.1px;
+    }
+    .hero-pill-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: breathe 2.5s ease-in-out infinite; }
+    @keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+    .hero h1 {
+      font-size: clamp(38px, 6.5vw, 76px);
+      font-weight: 800; line-height: 1.06; letter-spacing: -2.5px;
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent-2) 0%, #f8d08b 60%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(15px, 2.2vw, 18.5px); color: var(--text-2);
+      max-width: 580px; margin: 0 auto 40px; line-height: 1.75;
+      font-weight: 400;
+    }
+    .hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .hero-social-proof {
+      margin-top: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font-size: 13px; color: var(--text-3);
+    }
+    .hs-faces { display: flex; }
+    .hs-face {
+      width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--bg-0);
+      background: var(--bg-3); margin-left: -6px;
+      display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    .hs-face:first-child { margin-left: 0; }
+
+    /* ================================================
+       STATS BAR
+    ================================================ */
+    .stats-row {
+      background: var(--bg-1);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex; overflow-x: auto;
+    }
+    .stat {
+      flex: 1; min-width: 130px; padding: 22px 32px; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-n { font-size: 27px; font-weight: 800; letter-spacing: -1px; color: var(--text-1); line-height: 1; }
+    .stat-l { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 5px; }
+
+    /* ================================================
+       SECTION LAYOUT
+    ================================================ */
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-sm { padding: 52px 0; }
+    .eyebrow { font-size: 11.5px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 10px; display: block; }
+    .section-h { font-size: clamp(22px, 3.5vw, 32px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; margin-bottom: 10px; }
+    .section-p { font-size: 15px; color: var(--text-2); max-width: 520px; line-height: 1.7; }
+
+    /* ================================================
+       CARDS
+    ================================================ */
+    .card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      transition: all 0.22s; cursor: default;
+    }
+    .card-hover:hover {
+      background: var(--bg-3); border-color: var(--border-2);
+      transform: translateY(-3px); box-shadow: var(--shadow-card), 0 8px 28px rgba(0,0,0,0.4);
+    }
+
+    /* ================================================
+       FEATURES GRID (HOME)
+    ================================================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .feat-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 30px 28px 26px;
+      cursor: pointer; transition: all 0.22s; position: relative; overflow: hidden;
+    }
+    .feat-card::before {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 100px; height: 100px;
+      background: radial-gradient(circle at 80% 20%, var(--feat-glow, rgba(232,160,69,0.1)), transparent 65%);
+      pointer-events: none;
+    }
+    .feat-card:hover {
+      background: var(--bg-3); border-color: var(--border-2);
+      transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .feat-icon { font-size: 30px; margin-bottom: 16px; }
+    .feat-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .feat-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+
+    /* ================================================
+       RISK PREVIEW (HOME)
+    ================================================ */
+    .bg-warm { background: var(--bg-1); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .risk-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; margin-top: 32px; }
+    .risk-prev {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 18px 18px 16px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .risk-prev:hover { background: var(--bg-3); border-color: var(--border-2); transform: translateY(-2px); }
+    .risk-prev-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 8px; line-height: 1.3; }
+    .risk-prev-score { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
+    .risk-prev-bar { height: 4px; background: var(--bg-0); border-radius: 100px; overflow: hidden; }
+    .risk-prev-fill { height: 100%; border-radius: 100px; }
+
+    /* ================================================
+       CHARTS (HOME)
+    ================================================ */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .chart-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 28px 28px 24px;
+    }
+    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .chart-sub { font-size: 12px; color: var(--text-3); margin-bottom: 24px; }
+    .bar-chart { display: flex; flex-direction: column; gap: 11px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { font-size: 12.5px; color: var(--text-2); width: 170px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 7px; background: var(--bg-0); border-radius: 100px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 100px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .bar-pct { font-size: 11.5px; font-weight: 700; min-width: 34px; text-align: right; }
+
+    /* ================================================
+       COMMUNITY BANNER
+    ================================================ */
+    .community-banner {
+      border-radius: var(--r-xl);
+      background: linear-gradient(135deg, rgba(232,160,69,0.1) 0%, rgba(155,125,255,0.07) 100%);
+      border: 1px solid rgba(232,160,69,0.2);
+      padding: 52px 40px; text-align: center;
+    }
+    .community-banner h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 10px; }
+    .community-banner p { font-size: 15px; color: var(--text-2); margin-bottom: 26px; }
+
+    /* ================================================
+       JOB RISK TOOL PAGE
+    ================================================ */
+    .risk-page-hero {
+      background: var(--bg-1); border-bottom: 1px solid var(--border);
+      padding: 72px 24px 56px; text-align: center;
+    }
+    .search-wrap { max-width: 600px; margin: 32px auto 0; position: relative; }
+    .search-field {
+      width: 100%; padding: 16px 56px 16px 22px;
+      background: var(--bg-input); border: 1.5px solid var(--border-2);
+      border-radius: var(--r-xl); color: var(--text-1);
+      font-size: 16px; font-weight: 400;
+      transition: all 0.2s; font-family: var(--font);
+    }
+    .search-field:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); outline: none; }
+    .search-field::placeholder { color: var(--text-3); }
+    .search-go {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: var(--accent); color: #000;
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; cursor: pointer; border: none; transition: all 0.18s;
+    }
+    .search-go:hover { background: var(--accent-2); }
+    .search-dropdown {
+      position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 200;
+      background: var(--bg-2); border: 1px solid var(--border-2);
+      border-radius: var(--r-lg); overflow: hidden;
+      box-shadow: var(--shadow-lg); display: none;
+    }
+    .sdrop-item {
+      padding: 11px 18px; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.14s;
+    }
+    .sdrop-item:hover { background: var(--bg-3); }
+    .sdrop-badge {
+      font-size: 11.5px; font-weight: 700; padding: 3px 9px;
+      border-radius: var(--r-pill);
+    }
+    .risk-result { max-width: 780px; margin: 48px auto 0; display: none; }
+    .risk-result.show { display: block; }
+    .rr-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 32px; margin-bottom: 16px;
+    }
+    .rr-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
+    .rr-title { font-size: 27px; font-weight: 800; letter-spacing: -0.8px; }
+    .rr-cat { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+    .rr-badge {
+      font-size: 44px; font-weight: 900; letter-spacing: -2px;
+      padding: 10px 18px; border-radius: var(--r-lg);
+      min-width: 100px; text-align: center; flex-shrink: 0;
+    }
+    .rr-bar-label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-3); margin-bottom: 7px; }
+    .rr-bar-track { height: 9px; background: var(--bg-0); border-radius: var(--r-pill); overflow: hidden; }
+    .rr-bar-fill { height: 100%; border-radius: var(--r-pill); transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+    .rr-meta { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 22px; }
+    .rr-meta-item .l { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
+    .rr-meta-item .v { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .rr-section { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 24px 28px; margin-bottom: 14px; }
+    .rr-section h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; }
+    .rr-section p { font-size: 14.5px; color: var(--text-2); line-height: 1.75; }
+    .learn-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .learn-chip {
+      background: var(--accent-glow); border: 1px solid var(--accent-ring);
+      color: var(--accent-2); font-size: 13px; font-weight: 500;
+      padding: 6px 14px; border-radius: var(--r-pill); cursor: pointer; transition: all 0.2s;
+    }
+    .learn-chip:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+    .risk-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 28px; }
+    .rfilter {
+      padding: 7px 15px; border-radius: var(--r-pill);
+      background: var(--bg-2); border: 1px solid var(--border);
+      color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.18s;
+    }
+    .rfilter:hover, .rfilter.on { background: var(--accent-glow); border-color: var(--accent-ring); color: var(--accent-2); }
+    .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 14px; }
+    .job-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 18px 18px 14px; cursor: pointer;
+      transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .job-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px; border-radius: 3px 0 0 3px;
+    }
+    .job-card:hover { background: var(--bg-3); border-color: var(--border-2); transform: translateY(-2px); }
+    .jc-title { font-size: 14.5px; font-weight: 600; margin-bottom: 3px; padding-left: 10px; }
+    .jc-cat { font-size: 12px; color: var(--text-3); padding-left: 10px; margin-bottom: 12px; }
+    .jc-risk-row { display: flex; align-items: center; gap: 10px; padding-left: 10px; }
+    .jc-risk-n { font-size: 19px; font-weight: 800; min-width: 42px; }
+    .jc-risk-bar { flex: 1; height: 5px; background: var(--bg-0); border-radius: 100px; overflow: hidden; }
+    .jc-risk-fill { height: 100%; border-radius: 100px; }
+
+    /* Semantic colours shortcuts */
+    .c-red { color: var(--red); } .c-orange { color: var(--orange); }
+    .c-yellow { color: var(--yellow); } .c-green { color: var(--green); }
+    .bg-red { background: var(--red); } .bg-orange { background: var(--orange); }
+    .bg-yellow { background: var(--yellow); } .bg-green { background: var(--green); }
+    .pill-red { background: var(--red-s); color: var(--red); border: 1px solid rgba(240,90,90,.25); }
+    .pill-orange { background: var(--orange-s); color: var(--orange); border: 1px solid rgba(232,124,62,.25); }
+    .pill-yellow { background: var(--yellow-s); color: var(--yellow); border: 1px solid rgba(212,168,57,.25); }
+    .pill-green { background: var(--green-s); color: var(--green); border: 1px solid rgba(76,175,135,.25); }
+    .before-red::before { background: var(--red); }
+    .before-orange::before { background: var(--orange); }
+    .before-yellow::before { background: var(--yellow); }
+    .before-green::before { background: var(--green); }
+
+    /* ================================================
+       NEWS
+    ================================================ */
+    .news-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 28px; }
+    .nfilter { padding: 7px 15px; border-radius: var(--r-pill); background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.18s; }
+    .nfilter:hover, .nfilter.on { background: var(--accent-glow); border-color: var(--accent-ring); color: var(--accent-2); }
+    .news-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    .news-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); overflow: hidden; cursor: pointer; transition: all 0.2s;
+      margin-bottom: 18px;
+    }
+    .news-card:hover { background: var(--bg-3); border-color: var(--border-2); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .news-card-featured { display: grid; grid-template-columns: 1fr 1fr; }
+    .news-thumb {
+      aspect-ratio: 16/9; background: var(--bg-1);
+      display: flex; align-items: center; justify-content: center; font-size: 48px;
+    }
+    .news-body { padding: 22px 24px; }
+    .news-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; padding: 3px 9px; border-radius: var(--r-pill); margin-bottom: 11px; }
+    .news-title { font-size: 17px; font-weight: 700; line-height: 1.35; margin-bottom: 9px; letter-spacing: -0.3px; }
+    .news-title-sm { font-size: 14.5px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
+    .news-excerpt { font-size: 13.5px; color: var(--text-2); line-height: 1.65; margin-bottom: 14px; }
+    .news-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-3); }
+    .news-meta .source { color: var(--text-2); font-weight: 600; }
+    .news-loading { text-align: center; padding: 60px 0; color: var(--text-3); }
+    .spinner { width: 32px; height: 32px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .news-sidebar-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 16px; cursor: pointer; transition: all 0.18s; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+    .news-sidebar-card:hover { background: var(--bg-3); }
+    .nsc-icon { font-size: 20px; flex-shrink: 0; padding-top: 1px; }
+    .nsc-title { font-size: 13.5px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+    .nsc-meta { font-size: 11.5px; color: var(--text-3); }
+    .rss-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ================================================
+       LEARN
+    ================================================ */
+    .tracks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+    .track-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 28px 26px 24px;
+      cursor: pointer; transition: all 0.22s; position: relative; overflow: hidden;
+    }
+    .track-card::before {
+      content: ''; position: absolute; top: -30px; right: -30px;
+      width: 120px; height: 120px; border-radius: 50%;
+      background: var(--track-spot, rgba(232,160,69,0.08));
+      pointer-events: none;
+    }
+    .track-card:hover { background: var(--bg-3); border-color: var(--border-2); transform: translateY(-3px); box-shadow: var(--shadow); }
+    .track-icon { font-size: 32px; margin-bottom: 14px; }
+    .track-title { font-size: 16px; font-weight: 700; margin-bottom: 7px; letter-spacing: -0.3px; }
+    .track-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.68; margin-bottom: 16px; }
+    .track-footer { display: flex; justify-content: space-between; align-items: center; }
+    .track-dur { font-size: 12px; color: var(--text-3); }
+    .track-level { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); }
+    .tl-bg { background: var(--green-s); color: var(--green); }
+    .tl-ym { background: var(--yellow-s); color: var(--yellow); }
+    .tl-adv { background: var(--orange-s); color: var(--orange); }
+    .tutorial-list { display: flex; flex-direction: column; gap: 10px; }
+    .tut-item {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-lg);
+      padding: 18px 20px; display: flex; gap: 14px; align-items: center;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .tut-item:hover { background: var(--bg-3); border-color: var(--border-2); }
+    .tut-icon { font-size: 26px; flex-shrink: 0; }
+    .tut-title { font-size: 14.5px; font-weight: 600; margin-bottom: 4px; }
+    .tut-meta { font-size: 12px; color: var(--text-3); display: flex; gap: 12px; }
+    .tut-arrow { margin-left: auto; color: var(--text-3); font-size: 16px; flex-shrink: 0; }
+
+    /* ================================================
+       FORUM
+    ================================================ */
+    .forum-layout { display: grid; grid-template-columns: 220px 1fr; gap: 22px; }
+    .forum-nav {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 18px; height: fit-content; position: sticky; top: 80px;
+    }
+    .fn-group-label { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; }
+    .fn-group-label:first-child { margin-top: 0; }
+    .fn-item {
+      padding: 8px 11px; border-radius: var(--r); font-size: 13.5px; font-weight: 500;
+      color: var(--text-2); cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .fn-item:hover, .fn-item.on { background: var(--accent-glow); color: var(--text-1); }
+    .fn-count { font-size: 11px; color: var(--text-3); font-weight: 400; }
+    .forum-post {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 22px 24px; margin-bottom: 12px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .forum-post:hover { background: var(--bg-3); border-color: var(--border-2); }
+    .fp-top { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .fp-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: white;
+    }
+    .fp-meta { font-size: 12px; color: var(--text-3); margin-bottom: 3px; }
+    .fp-title { font-size: 15px; font-weight: 700; line-height: 1.35; letter-spacing: -0.2px; }
+    .fp-tag { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); margin-left: auto; flex-shrink: 0; border: 1px solid; }
+    .fp-excerpt { font-size: 13.5px; color: var(--text-2); line-height: 1.65; margin-bottom: 14px; }
+    .fp-footer { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-3); }
+    .fp-footer span { display: flex; align-items: center; gap: 4px; }
+    .new-thread-btn {
+      width: 100%; padding: 12px; border-radius: var(--r-lg);
+      background: var(--accent); color: #000; font-size: 14px; font-weight: 700;
+      margin-bottom: 18px; cursor: pointer; border: none; transition: all 0.18s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .new-thread-btn:hover { background: var(--accent-2); }
+
+    /* ================================================
+       AUTH MODAL & GENERIC MODAL
+    ================================================ */
+    .overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px) saturate(1.2);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+      opacity: 0; pointer-events: none; transition: opacity 0.22s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg-2); border: 1px solid var(--border-2);
+      border-radius: var(--r-xl); width: 100%; max-width: 440px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(16px) scale(0.98); transition: transform 0.22s;
+    }
+    .overlay.open .modal { transform: translateY(0) scale(1); }
+    .modal-wide { max-width: 720px; }
+    .modal-head {
+      padding: 28px 28px 0;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    .modal-sub { font-size: 13.5px; color: var(--text-2); margin-top: 4px; }
+    .modal-x { background: none; color: var(--text-3); font-size: 22px; cursor: pointer; line-height: 1; transition: color 0.15s; }
+    .modal-x:hover { color: var(--text-1); }
+    .modal-body { padding: 0 28px 28px; }
+    .fg { margin-bottom: 16px; }
+    .fg label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .fi {
+      width: 100%; padding: 11px 14px; background: var(--bg-input);
+      border: 1px solid var(--border-2); border-radius: var(--r);
+      color: var(--text-1); font-size: 14.5px; font-family: var(--font);
+      transition: border-color 0.2s;
+    }
+    .fi:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .fi::placeholder { color: var(--text-3); }
+    .fta { width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border-2); border-radius: var(--r); color: var(--text-1); font-size: 14.5px; font-family: var(--font); resize: vertical; min-height: 88px; transition: border-color 0.2s; }
+    .fta:focus { border-color: var(--accent); }
+    .fta::placeholder { color: var(--text-3); }
+    .fsel { width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border-2); border-radius: var(--r); color: var(--text-1); font-size: 14.5px; font-family: var(--font); cursor: pointer; }
+    .fsel:focus { border-color: var(--accent); }
+    .fsub {
+      width: 100%; padding: 13px; background: var(--accent); color: #000;
+      border: none; border-radius: var(--r-lg); font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all 0.18s; font-family: var(--font);
+    }
+    .fsub:hover { background: var(--accent-2); }
+    .fsub:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+    .auth-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .auth-divider-text { font-size: 12px; color: var(--text-3); }
+    .social-btn {
+      width: 100%; padding: 11px 14px; border-radius: var(--r-lg);
+      background: var(--bg-3); border: 1px solid var(--border-2);
+      color: var(--text-1); font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); transition: all 0.18s;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      margin-bottom: 8px;
+    }
+    .social-btn:hover { background: var(--bg-hover); border-color: var(--border-2); }
+    .auth-switch { text-align: center; margin-top: 16px; font-size: 13.5px; color: var(--text-3); }
+    .auth-switch-link { color: var(--accent-2); cursor: pointer; font-weight: 600; }
+    .auth-switch-link:hover { color: var(--text-1); }
+    .auth-error { background: var(--red-s); border: 1px solid rgba(240,90,90,.25); border-radius: var(--r); padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 14px; display: none; }
+    .auth-error.show { display: block; }
+    .auth-success { background: var(--green-s); border: 1px solid rgba(76,175,135,.25); border-radius: var(--r); padding: 10px 14px; font-size: 13px; color: var(--green); margin-bottom: 14px; display: none; }
+    .auth-success.show { display: block; }
+    .terms-link { color: var(--text-3); font-size: 12px; cursor: pointer; }
+    .terms-link:hover { color: var(--accent-2); }
+
+    /* ================================================
+       COOKIE BANNER
+    ================================================ */
+    .cookie-banner {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 990;
+      background: var(--bg-2); border-top: 1px solid var(--border-2);
+      padding: 18px 28px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cookie-banner.show { transform: translateY(0); }
+    .cookie-text { flex: 1; min-width: 280px; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+    .cookie-text a { color: var(--accent-2); cursor: pointer; }
+    .cookie-buttons { display: flex; gap: 8px; flex-shrink: 0; }
+    .cookie-accept { padding: 9px 20px; background: var(--accent); color: #000; border: none; border-radius: var(--r-lg); font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: background 0.18s; }
+    .cookie-accept:hover { background: var(--accent-2); }
+    .cookie-decline { padding: 9px 16px; background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--r-lg); font-size: 13.5px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: all 0.18s; }
+    .cookie-decline:hover { color: var(--text-1); }
+
+    /* ================================================
+       TOAST
+    ================================================ */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+      background: var(--bg-2); border: 1px solid var(--border-2);
+      border-radius: var(--r-lg); padding: 13px 18px; font-size: 14px;
+      box-shadow: var(--shadow-lg); color: var(--text-1);
+      transform: translateY(12px); opacity: 0; transition: all 0.25s; pointer-events: none;
+      max-width: 340px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ================================================
+       FOOTER
+    ================================================ */
+    footer {
+      background: var(--bg-1); border-top: 1px solid var(--border);
+      padding: 56px 24px 36px;
+    }
+    .footer-wrap { max-width: 1160px; margin: 0 auto; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 44px; }
+    .footer-brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 10px; }
+    .footer-tagline { font-size: 13.5px; color: var(--text-3); line-height: 1.7; max-width: 260px; }
+    .footer-col-h { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .footer-link { display: block; font-size: 13.5px; color: var(--text-2); margin-bottom: 9px; cursor: pointer; transition: color 0.15s; }
+    .footer-link:hover { color: var(--text-1); }
+    .footer-bottom {
+      border-top: 1px solid var(--border); padding-top: 22px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12.5px; color: var(--text-3); flex-wrap: wrap; gap: 10px;
+    }
+    .footer-legal { display: flex; gap: 16px; }
+
+    /* ================================================
+       RESPONSIVE
+    ================================================ */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .tracks-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 860px) {
+      .news-layout { grid-template-columns: 1fr; }
+      .news-card-featured { grid-template-columns: 1fr; }
+      .forum-layout { grid-template-columns: 1fr; }
+      .forum-nav { display: none; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .bar-label { width: 130px; font-size: 12px; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .nav-right .btn-ghost { display: none; }
+      .mobile-menu-btn { display: block; }
+      .hero h1 { font-size: 34px; letter-spacing: -1.5px; }
+      .hero-actions { flex-direction: column; }
+      .btn-primary-lg, .btn-secondary-lg { width: 100%; justify-content: center; }
+      .features-grid { grid-template-columns: 1fr; }
+      .tracks-grid { grid-template-columns: 1fr; }
+      .stats-row { flex-wrap: wrap; }
+      .stat { min-width: 50%; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .rr-header { flex-direction: column; }
+      .rr-badge { font-size: 36px; }
+      .modal { margin: 0 8px; }
+      .cookie-banner { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================
+     NAV
+================================================ -->
+<nav id="nav">
+  <div class="nav-brand" onclick="goto('home')">
+    <span><span class="nav-brand-a">a</span>inxiety</span>
+  </div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="goto('home')">Home</button>
+    <button class="nav-btn" onclick="goto('risk')">Job Risk Tool</button>
+    <button class="nav-btn" onclick="goto('news')">News</button>
+    <button class="nav-btn" onclick="goto('learn')">Learn</button>
+    <button class="nav-btn" onclick="goto('forum')">Community</button>
+  </div>
+  <div class="nav-right">
+    <!-- Guest state -->
+    <div class="nav-auth-guest" id="nav-guest">
+      <button class="btn-ghost" onclick="openAuth('login')">Sign in</button>
+      <button class="btn-primary" onclick="openAuth('signup')">Join free &#8594;</button>
+    </div>
+    <!-- Logged-in state -->
+    <div class="nav-auth-user hidden" id="nav-user">
+      <div class="nav-avatar" id="nav-avatar" onclick="openDropdown()" title="Account"></div>
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn-ghost" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+  <button class="mobile-menu-btn" onclick="toggleMobile()">&#9776;</button>
+</nav>
+
+<!-- ================================================
+     PAGE: HOME
+================================================ -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-noise"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-pill">
+      <span class="hero-pill-dot"></span>
+      Navigating the AI revolution together
+    </div>
+    <h1>The world is changing.<br><em>You don't have to panic.</em></h1>
+    <p class="hero-sub">ainxiety is your honest guide through the AI revolution &#8212; job risk data, curated news, practical skills, and a community of real people figuring it out alongside you.</p>
+    <div class="hero-actions">
+      <button class="btn-primary-lg" onclick="goto('risk')">&#9889; Check your job risk</button>
+      <button class="btn-secondary-lg" onclick="openAuth('signup')">Join the community &#8594;</button>
+    </div>
+    <div class="hero-social-proof">
+      <div class="hs-faces">
+        <div class="hs-face">&#128105;</div>
+        <div class="hs-face">&#128104;</div>
+        <div class="hs-face">&#129489;</div>
+        <div class="hs-face">&#128105;&#8205;&#128188;</div>
+        <div class="hs-face">&#129489;&#8205;&#128187;</div>
+      </div>
+      <span>Join thousands of workers navigating AI together</span>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n">44%</div><div class="stat-l">jobs at risk by 2030</div></div>
+    <div class="stat"><div class="stat-n">300M</div><div class="stat-l">jobs could be affected</div></div>
+    <div class="stat"><div class="stat-n">97M</div><div class="stat-l">new AI-era roles emerging</div></div>
+    <div class="stat"><div class="stat-n">40+</div><div class="stat-l">jobs in our risk tool</div></div>
+    <div class="stat"><div class="stat-n">Free</div><div class="stat-l">always, for everyone</div></div>
+  </div>
+
+  <!-- Features -->
+  <div class="wrap section">
+    <div style="margin-bottom:36px">
+      <span class="eyebrow">What we offer</span>
+      <h2 class="section-h">Everything in one place</h2>
+      <p class="section-p">From understanding where you stand to knowing exactly what to do next.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card" style="--feat-glow:rgba(232,160,69,0.12)" onclick="goto('risk')">
+        <div class="feat-icon">&#127919;</div>
+        <div class="feat-title">Job Risk Tool</div>
+        <div class="feat-desc">Search your job title and get an honest AI risk score &#8212; with the reasoning, timeline, and what to build next.</div>
+      </div>
+      <div class="feat-card" style="--feat-glow:rgba(91,155,213,0.12)" onclick="goto('news')">
+        <div class="feat-icon">&#128240;</div>
+        <div class="feat-title">Curated News Feed</div>
+        <div class="feat-desc">We filter the noise from Wired, MIT Tech Review, The Verge and more. Only the AI news that matters to workers.</div>
+      </div>
+      <div class="feat-card" style="--feat-glow:rgba(76,175,135,0.12)" onclick="goto('learn')">
+        <div class="feat-icon">&#129504;</div>
+        <div class="feat-title">Skill Tracks</div>
+        <div class="feat-desc">Practical learning paths built for people whose industries are changing. No fluff &#8212; just what will actually matter.</div>
+      </div>
+      <div class="feat-card" style="--feat-glow:rgba(155,125,255,0.12)" onclick="goto('forum')">
+        <div class="feat-icon">&#128172;</div>
+        <div class="feat-title">Community Forum</div>
+        <div class="feat-desc">Share job updates, ask questions, and hear real stories from people in the same boat. No judgement here.</div>
+      </div>
+      <div class="feat-card" style="--feat-glow:rgba(212,168,57,0.12)">
+        <div class="feat-icon">&#128202;</div>
+        <div class="feat-title">Data Infographics</div>
+        <div class="feat-desc">Visual explainers breaking down the real numbers on AI and work &#8212; by sector, region, timeline, and skill level.</div>
+      </div>
+      <div class="feat-card" style="--feat-glow:rgba(232,124,62,0.12)" onclick="openAuth('signup')">
+        <div class="feat-icon">&#9993;&#65039;</div>
+        <div class="feat-title">Weekly Digest</div>
+        <div class="feat-desc">The most important AI + jobs news every week, curated and summarised. Sign up free &#8212; no spam, ever.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk preview -->
+  <div class="bg-warm section-sm">
+    <div class="wrap">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:32px">
+        <div>
+          <span class="eyebrow">Job Risk Snapshot</span>
+          <h2 class="section-h">How exposed is your sector?</h2>
+          <p class="section-p">A snapshot of AI risk scores. Click any job to see the full picture.</p>
+        </div>
+        <button class="btn-primary" onclick="goto('risk')">See all jobs &#8594;</button>
+      </div>
+      <div id="risk-preview-grid" class="risk-preview-grid"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="wrap section">
+    <div style="margin-bottom:36px">
+      <span class="eyebrow">The Numbers</span>
+      <h2 class="section-h">AI impact by sector</h2>
+      <p class="section-p">What percentage of each industry's workforce is exposed to automation?</p>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">% of roles highly exposed to AI by sector</div>
+        <div class="chart-sub">Source: McKinsey Global Institute, 2024</div>
+        <div class="bar-chart" id="chart-sector"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">AI adoption speed by industry</div>
+        <div class="chart-sub">How fast AI is integrating into each sector</div>
+        <div class="bar-chart" id="chart-adoption"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Community CTA -->
+  <div class="wrap section-sm" style="padding-bottom:80px">
+    <div class="community-banner">
+      <h2>You're not alone in this.</h2>
+      <p>Thousands of people are sharing job updates, asking questions, and figuring out how to navigate AI in their industries. Come join the conversation.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-primary-lg" onclick="goto('forum')">&#128172; Join the community</button>
+        <button class="btn-secondary-lg" onclick="openAuth('signup')">Create free account</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-wrap">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-name"><span style="color:var(--accent-2)">a</span>inxiety</div>
+          <p class="footer-tagline">Navigate the age of AI without losing your mind. Free tools, honest data, and a community that gets it.</p>
+        </div>
+        <div>
+          <div class="footer-col-h">Tools</div>
+          <span class="footer-link" onclick="goto('risk')">Job Risk Tool</span>
+          <span class="footer-link" onclick="goto('news')">News Feed</span>
+          <span class="footer-link" onclick="goto('learn')">Skill Tracks</span>
+        </div>
+        <div>
+          <div class="footer-col-h">Community</div>
+          <span class="footer-link" onclick="goto('forum')">Forum</span>
+          <span class="footer-link" onclick="openAuth('signup')">Join free</span>
+          <span class="footer-link" onclick="openAuth('login')">Sign in</span>
+        </div>
+        <div>
+          <div class="footer-col-h">Legal</div>
+          <span class="footer-link" onclick="openLegal('terms')">Terms & Conditions</span>
+          <span class="footer-link" onclick="openLegal('privacy')">Privacy Policy</span>
+          <span class="footer-link" onclick="openLegal('cookies')">Cookie Policy</span>
+          <span class="footer-link">Contact us</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&#169; 2026 ainxiety. Made with genuine concern for people's livelihoods.</span>
+        <div class="footer-legal">
+          <span onclick="openLegal('terms')" style="cursor:pointer">Terms</span>
+          <span onclick="openLegal('privacy')" style="cursor:pointer">Privacy</span>
+          <span onclick="openLegal('cookies')" style="cursor:pointer">Cookies</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ================================================
+     PAGE: JOB RISK TOOL
+================================================ -->
+<div id="page-risk" class="page">
+  <div class="risk-page-hero">
+    <span class="eyebrow" style="display:block;text-align:center">AI Job Risk Tool</span>
+    <h1 style="font-size:clamp(26px,5vw,50px);font-weight:800;letter-spacing:-1.5px;margin-bottom:12px">Is your job safe from AI?</h1>
+    <p style="font-size:15px;color:var(--text-2);max-width:500px;margin:0 auto">Search any job title for an honest, data-backed AI risk assessment &#8212; with what you can actually do about it.</p>
+    <div class="search-wrap">
+      <input class="search-field" id="job-search" type="text" placeholder="e.g. Nurse, Accountant, Software Engineer..." autocomplete="off" />
+      <button class="search-go" onclick="doSearch()">&#128269;</button>
+      <div class="search-dropdown" id="search-dropdown"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="risk-result" id="risk-result"></div>
+
+    <div style="padding:48px 0 80px">
+      <div style="margin-bottom:24px">
+        <h2 class="section-h" style="font-size:20px">Browse all jobs</h2>
+        <p style="font-size:13.5px;color:var(--text-3)">Filter by risk level to see the full picture.</p>
+      </div>
+      <div class="risk-filters">
+        <button class="rfilter on" onclick="filterJobs('all',this)">All jobs</button>
+        <button class="rfilter" onclick="filterJobs('critical',this)">&#128308; Critical (80%+)</button>
+        <button class="rfilter" onclick="filterJobs('high',this)">&#128992; High (60&#8211;79%)</button>
+        <button class="rfilter" onclick="filterJobs('medium',this)">&#128993; Medium (35&#8211;59%)</button>
+        <button class="rfilter" onclick="filterJobs('low',this)">&#128994; Lower (&lt;35%)</button>
+      </div>
+      <div class="jobs-grid" id="jobs-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     PAGE: NEWS
+================================================ -->
+<div id="page-news" class="page">
+  <div class="wrap section">
+    <div style="margin-bottom:32px">
+      <span class="eyebrow">AI News & Updates</span>
+      <h2 class="section-h">What's happening in AI</h2>
+      <p class="section-p">Curated from MIT Tech Review, Wired, The Verge, BBC Tech and more.</p>
+    </div>
+    <div class="news-filters">
+      <button class="nfilter on" onclick="filterNews('all',this)">All</button>
+      <button class="nfilter" onclick="filterNews('jobs',this)">Jobs & Work</button>
+      <button class="nfilter" onclick="filterNews('tools',this)">New AI Tools</button>
+      <button class="nfilter" onclick="filterNews('policy',this)">Policy</button>
+      <button class="nfilter" onclick="filterNews('learn',this)">Learning</button>
+    </div>
+    <div id="news-loading" class="news-loading"><div class="spinner"></div><p>Fetching latest AI news&#8230;</p></div>
+    <div id="news-container" class="hidden">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);margin-bottom:18px" id="rss-status"></div>
+      <div class="news-layout">
+        <div id="news-main"></div>
+        <div id="news-sidebar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     PAGE: LEARN
+================================================ -->
+<div id="page-learn" class="page">
+  <div class="wrap section">
+    <div style="max-width:600px;margin:0 auto;text-align:center;padding:60px 0 40px">
+      <div style="font-size:56px;margin-bottom:24px">&#127891;</div>
+      <span class="eyebrow">Skill Building</span>
+      <h2 class="section-h" style="margin-top:10px">Learning hub coming soon</h2>
+      <p class="section-p" style="max-width:480px;margin:0 auto 36px">We're building practical, no-fluff courses for people whose jobs are changing. AI fundamentals, prompt engineering, career pivoting and more &#8212; built for real people, not tech enthusiasts. Sign up to get early access.</p>
+
+      <!-- Sign-up card -->
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px 40px;text-align:left;max-width:440px;margin:0 auto">
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text-1)">Get early access</div>
+        <div style="font-size:14px;color:var(--text-2);margin-bottom:24px">Free to join. We'll let you know the moment courses go live.</div>
+        <div class="fg" style="margin-bottom:14px"><label>Your name</label><input class="fi" id="learn-waitlist-name" type="text" placeholder="e.g. Jamie" /></div>
+        <div class="fg" style="margin-bottom:14px"><label>Email address</label><input class="fi" id="learn-waitlist-email" type="email" placeholder="you@example.com" /></div>
+        <div class="fg" style="margin-bottom:20px"><label>Your job or industry <span style="color:var(--text-3);font-weight:400">(optional)</span></label><input class="fi" id="learn-waitlist-job" type="text" placeholder="e.g. Nurse, Teacher, Accountant&#8230;" /></div>
+        <button class="fsub" id="learn-waitlist-btn" onclick="learnWaitlist()">Notify me when courses launch &#8594;</button>
+        <div id="learn-waitlist-msg" style="display:none;margin-top:14px;padding:12px 16px;background:rgba(76,175,135,0.1);border:1px solid rgba(76,175,135,0.25);border-radius:10px;color:var(--green);font-size:13.5px;font-weight:600;text-align:center">
+          &#10003; You're on the list! We'll let you know as soon as courses are ready.
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-top:14px;line-height:1.6;text-align:center">No spam. Unsubscribe any time.</p>
+      </div>
+
+      <!-- What's coming -->
+      <div style="margin-top:52px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:left">
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 18px">
+          <div style="font-size:24px;margin-bottom:10px">&#129302;</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text-1)">AI Fundamentals</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.55">Understand how AI works and talk confidently about it at work.</div>
+        </div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 18px">
+          <div style="font-size:24px;margin-bottom:10px">&#9889;</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text-1)">Prompt Engineering</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.55">Get dramatically better results from AI tools in your daily work.</div>
+        </div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 18px">
+          <div style="font-size:24px;margin-bottom:10px">&#128188;</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text-1)">Career Pivoting</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.55">Build on your existing strengths and pivot without starting from zero.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     PAGE: FORUM
+================================================ -->
+<div id="page-forum" class="page">
+
+  <!-- Thread list view -->
+  <div id="forum-list-view">
+    <div class="wrap section">
+      <div class="forum-layout">
+
+        <!-- Sidebar -->
+        <aside class="forum-nav">
+          <button class="new-thread-btn" onclick="requireAuth(openNewThread)">&#43; New Thread</button>
+          <div class="fn-group-label">Categories</div>
+          <div class="fn-item on" onclick="filterForum('all',this)">&#128172; All Discussions</div>
+          <div class="fn-item" onclick="filterForum('jobs',this)">&#128188; Jobs &amp; Moves</div>
+          <div class="fn-item" onclick="filterForum('stories',this)">&#128100; Personal Stories</div>
+          <div class="fn-item" onclick="filterForum('learning',this)">&#129504; Learning Together</div>
+          <div class="fn-item" onclick="filterForum('tools',this)">&#129302; AI Tools</div>
+          <div class="fn-item" onclick="filterForum('general',this)">&#128161; General</div>
+        </aside>
+
+        <!-- Thread list -->
+        <div>
+          <div id="forum-posts">
+            <div style="text-align:center;padding:60px 0;color:var(--text-3);font-size:14px">Loading community&#8230;</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Thread detail view -->
+  <div id="forum-thread-view" style="display:none">
+    <div class="wrap section">
+      <button onclick="closeThread()" style="background:none;border:none;color:var(--text-2);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:28px;padding:0;font-family:var(--font)">&#8592; Back to Community</button>
+      <div id="thread-detail-content"></div>
+      <div style="margin-top:28px">
+        <div style="font-size:13px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Replies</div>
+        <div id="thread-replies-content"></div>
+        <div id="thread-reply-form" style="margin-top:20px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 24px;display:none">
+          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-1)">Leave a reply</div>
+          <div class="fg" style="margin-bottom:14px">
+            <textarea class="fta" id="reply-textarea" rows="3" placeholder="Share your thoughts&#8230;"></textarea>
+          </div>
+          <button class="fsub" id="reply-submit-btn" style="width:auto;padding:11px 24px;font-size:14px" onclick="submitReply()">Post reply &#8594;</button>
+        </div>
+        <div id="thread-reply-cta" style="margin-top:20px;text-align:center;padding:24px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);display:none">
+          <p style="color:var(--text-2);font-size:14px;margin-bottom:14px">Sign in to join the conversation</p>
+          <button class="fsub" style="width:auto;padding:11px 28px;font-size:14px" onclick="openAuth('signup')">Join free &#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================
+     AUTH MODAL
+================================================ -->
+<div class="overlay" id="auth-overlay" onclick="closeOnBg(event,'auth-overlay')">
+  <div class="modal" id="auth-modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="auth-modal-title">Create your account</div>
+        <div class="modal-sub" id="auth-modal-sub">Free forever. No spam.</div>
+      </div>
+      <button class="modal-x" onclick="closeOverlay('auth-overlay')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Social buttons -->
+      <div id="auth-social">
+        <button class="social-btn" onclick="socialLogin('google')">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <button class="social-btn" onclick="socialLogin('github')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-1)"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          Continue with GitHub
+        </button>
+      </div>
+      <div class="auth-divider"><div class="auth-divider-line"></div><span class="auth-divider-text">or with email</span><div class="auth-divider-line"></div></div>
+      <!-- Forms -->
+      <div id="auth-error" class="auth-error"></div>
+      <div id="auth-success" class="auth-success"></div>
+      <div id="auth-form-signup">
+        <div class="fg"><label>Your name</label><input class="fi" id="signup-name" type="text" placeholder="e.g. Jamie Reeves" /></div>
+        <div class="fg"><label>Email address</label><input class="fi" id="signup-email" type="email" placeholder="you@example.com" /></div>
+        <div class="fg"><label>Password</label><input class="fi" id="signup-pass" type="password" placeholder="At least 8 characters" /></div>
+        <div class="fg"><label>Your job or industry</label><input class="fi" id="signup-job" type="text" placeholder="e.g. Nurse, Copywriter, Electrician&#8230;" /></div>
+        <button class="fsub" id="signup-btn" onclick="doSignup()">Create free account &#8594;</button>
+        <p style="font-size:12px;color:var(--text-3);margin-top:12px;line-height:1.6">By creating an account you agree to our <span class="terms-link" onclick="openLegal('terms')">Terms & Conditions</span> and <span class="terms-link" onclick="openLegal('privacy')">Privacy Policy</span>.</p>
+        <div class="auth-switch">Already have an account? <span class="auth-switch-link" onclick="switchAuth('login')">Sign in</span></div>
+      </div>
+      <div id="auth-form-login" class="hidden">
+        <div class="fg"><label>Email address</label><input class="fi" id="login-email" type="email" placeholder="you@example.com" /></div>
+        <div class="fg"><label>Password</label><input class="fi" id="login-pass" type="password" placeholder="Your password" /></div>
+        <button class="fsub" id="login-btn" onclick="doLogin()">Sign in &#8594;</button>
+        <div class="auth-switch">No account yet? <span class="auth-switch-link" onclick="switchAuth('signup')">Join free</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     GENERIC MODAL
+================================================ -->
+<div class="overlay" id="gen-overlay" onclick="closeOnBg(event,'gen-overlay')">
+  <div class="modal modal-wide" id="gen-modal">
+    <div class="modal-head">
+      <div class="modal-title" id="gen-title"></div>
+      <button class="modal-x" onclick="closeOverlay('gen-overlay')">&#215;</button>
+    </div>
+    <div class="modal-body" id="gen-body" style="max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     COOKIE BANNER
+================================================ -->
+<div class="cookie-banner" id="cookie-banner">
+  <div class="cookie-text">
+    We use cookies to keep you signed in and understand how people use ainxiety. We never sell your data.
+    <a onclick="openLegal('cookies')" style="cursor:pointer"> Learn more in our Cookie Policy.</a>
+  </div>
+  <div class="cookie-buttons">
+    <button class="cookie-decline" onclick="setCookiePref('declined')">Decline</button>
+    <button class="cookie-accept" onclick="setCookiePref('accepted')">Accept all</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+
+<!-- ================================================
+     JAVASCRIPT
+================================================ -->
+<script>
+
+/* ================================================
+   SUPABASE CONFIG
+   Replace SUPABASE_URL and SUPABASE_KEY below
+   with your project values from supabase.com &#8594; Settings &#8594; API
+================================================ */
+const SUPABASE_URL  = 'https://aqqgiwhzbqgakgztpwkj.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_gPLelpy3MiyR28eeepqh-A_Q17Q0ABS';
+
+let sb = null;
+let currentUser = null;
+
+function initSupabase() {
+  try {
+    if (SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL') return;
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sb.auth.onAuthStateChange((event, session) => {
+      currentUser = session?.user ?? null;
+      updateAuthUI();
+    });
+    sb.auth.getSession().then(({ data }) => {
+      currentUser = data?.session?.user ?? null;
+      updateAuthUI();
+    });
+  } catch(e) { console.warn('Supabase not configured:', e.message); }
+}
+
+function updateAuthUI() {
+  const guest = document.getElementById('nav-guest');
+  const user  = document.getElementById('nav-user');
+  const avatar = document.getElementById('nav-avatar');
+  const username = document.getElementById('nav-username');
+  if (currentUser) {
+    guest.classList.add('hidden');
+    user.classList.remove('hidden');
+    const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'You';
+    avatar.textContent = name.charAt(0).toUpperCase();
+    username.textContent = name;
+  } else {
+    guest.classList.remove('hidden');
+    user.classList.add('hidden');
+  }
+}
+
+async function doSignup() {
+  if (!sb) { toast('&#9888;&#65039; Auth not configured yet &#8212; see SETUP.md'); return; }
+  const name  = v('signup-name');
+  const email = v('signup-email');
+  const pass  = v('signup-pass');
+  const job   = v('signup-job');
+  if (!name || !email || !pass) { showAuthError('Please fill in all required fields.'); return; }
+  if (pass.length < 8) { showAuthError('Password must be at least 8 characters.'); return; }
+  setLoading('signup-btn', true);
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { name, job_industry: job } }
+  });
+  setLoading('signup-btn', false);
+  if (error) { showAuthError(error.message); return; }
+  showAuthSuccess('&#127881; Account created! Check your email to confirm, then sign in.');
+  // Store extra profile data
+  if (data.user && sb) {
+    try {
+      await sb.from('profiles').upsert({ id: data.user.id, name, job_industry: job, created_at: new Date().toISOString() });
+    } catch(e) { /* profiles table not yet created &#8212; auth still works fine */ }
+  }
+}
+
+async function doLogin() {
+  if (!sb) { toast('&#9888;&#65039; Auth not configured yet &#8212; see SETUP.md'); return; }
+  const email = v('login-email');
+  const pass  = v('login-pass');
+  if (!email || !pass) { showAuthError('Please enter your email and password.'); return; }
+  setLoading('login-btn', true);
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading('login-btn', false);
+  if (error) { showAuthError(error.message); return; }
+  closeOverlay('auth-overlay');
+  toast('&#128075; Welcome back!');
+}
+
+async function socialLogin(provider) {
+  if (!sb) { toast('&#9888;&#65039; Auth not configured yet &#8212; see SETUP.md'); return; }
+  await sb.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.href } });
+}
+
+async function signOut() {
+  if (sb) await sb.auth.signOut();
+  currentUser = null;
+  updateAuthUI();
+  toast('Signed out.');
+}
+
+function requireAuth(fn) {
+  if (currentUser) { fn(); } else { openAuth('signup'); }
+}
+
+/* helpers */
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function setLoading(id, on) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.disabled = on;
+  el.textContent = on ? 'Please wait&#8230;' : (id.includes('signup') ? 'Create free account &#8594;' : 'Sign in &#8594;');
+}
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('auth-success').classList.remove('show');
+}
+function showAuthSuccess(msg) {
+  const el = document.getElementById('auth-success');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('auth-error').classList.remove('show');
+}
+function clearAuthMessages() {
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-success').classList.remove('show');
+}
+
+
+/* ================================================
+   DATA
+================================================ */
+const JOBS = [
+  { title:"Data Entry Clerk", risk:95, cat:"Admin", trend:"declining", why:"AI processes structured and unstructured data faster, cheaper, and more accurately. Already being automated at scale across industries.", learn:["Python basics","Data Analysis","Excel automation"], time:"1&#8211;3 years", survive:"Move to data quality, data ops, or analytics roles" },
+  { title:"Telemarketer", risk:93, cat:"Sales", trend:"declining", why:"AI voice agents handle cold outreach, lead qualification, and follow-up 24/7 without fatigue or salary.", learn:["Sales strategy","CRM tools","Account management"], time:"1&#8211;2 years", survive:"Complex B2B sales requiring deep relationship building" },
+  { title:"Bank Teller", risk:91, cat:"Finance", trend:"declining", why:"ATMs replaced basic transactions. AI is now replacing advisory tasks. Branch banking is shrinking rapidly.", learn:["Financial planning","Digital banking","Customer experience"], time:"2&#8211;4 years", survive:"Wealth management, mortgage advisory, small business banking" },
+  { title:"Cashier", risk:90, cat:"Retail", trend:"declining", why:"Self-checkout, computer vision, and automated store formats are eliminating this role across retail globally.", learn:["Customer experience","Inventory management","Visual merchandising"], time:"2&#8211;5 years", survive:"Luxury retail, personal shopping, specialist retail experiences" },
+  { title:"Bookkeeper", risk:88, cat:"Finance", trend:"declining", why:"AI accounting tools (QuickBooks AI, Xero) automate transaction categorisation, reconciliation, and basic reporting.", learn:["Financial analysis","Tax strategy","CFO fundamentals"], time:"2&#8211;4 years", survive:"Financial controller, FP&A analyst, or advisory track" },
+  { title:"Proofreader", risk:87, cat:"Media", trend:"declining", why:"AI writing tools now catch grammar, style, tone, and factual inconsistencies more comprehensively than human review in most contexts.", learn:["Content strategy","Editorial direction","SEO writing"], time:"1&#8211;3 years", survive:"Editorial director, content strategist, brand voice expert" },
+  { title:"Travel Agent", risk:85, cat:"Hospitality", trend:"declining", why:"AI trip planners and booking platforms have removed most value from basic travel planning. Personalised luxury travel is the only moat.", learn:["Luxury travel consulting","Corporate travel","Destination expertise"], time:"2&#8211;4 years", survive:"Luxury or corporate travel specialists offering genuine curation" },
+  { title:"Receptionist", risk:83, cat:"Admin", trend:"declining", why:"AI phone systems, chatbots, and smart building tech are replacing front-desk roles across many industries.", learn:["Office management","Event coordination","Executive support"], time:"2&#8211;5 years", survive:"Executive assistant, office manager, experience coordinator" },
+  { title:"Assembly Line Worker", risk:82, cat:"Manufacturing", trend:"declining", why:"Industrial robots and computer vision perform repetitive assembly tasks continuously and with high precision.", learn:["Robotics maintenance","Quality control","CNC operation"], time:"3&#8211;7 years", survive:"Robot maintenance tech, automation operator, quality engineer" },
+  { title:"Paralegal (routine)", risk:80, cat:"Legal", trend:"declining", why:"AI legal research tools review contracts, find precedents, and summarise documents at a fraction of the cost.", learn:["Legal technology","Litigation support","Legal operations"], time:"3&#8211;5 years", survive:"Legal ops, complex case management, AI-assisted legal research" },
+  { title:"Accountant", risk:75, cat:"Finance", trend:"changing", why:"Routine accounting is being automated. But complex advisory work, tax strategy, and audit still require human judgement.", learn:["AI accounting tools","Financial advisory","Tax strategy"], time:"4&#8211;7 years", survive:"CFO track, tax strategy, forensic accounting, or advisory" },
+  { title:"Customer Service Rep", risk:74, cat:"Service", trend:"changing", why:"AI chatbots handle tier-1 and tier-2 support well. Complex, emotional, or escalation situations still need humans.", learn:["AI support tools","Customer success","Account management"], time:"2&#8211;4 years", survive:"Customer success manager, enterprise account management" },
+  { title:"Financial Analyst (junior)", risk:73, cat:"Finance", trend:"changing", why:"AI generates financial models and writes reports. Junior analyst tasks are heavily exposed.", learn:["Advanced modelling","Industry expertise","AI financial tools"], time:"3&#8211;6 years", survive:"Specialise deeply &#8212; sector expert, M&A analyst, alternative data" },
+  { title:"Translator", risk:72, cat:"Language", trend:"changing", why:"AI translation is remarkably accurate for most language pairs. Literary, legal, and cultural nuance still lags.", learn:["Localisation management","Cultural consulting","Legal/medical translation"], time:"2&#8211;5 years", survive:"Literary translation, localisation director, cultural consultant" },
+  { title:"Journalist (general)", risk:68, cat:"Media", trend:"changing", why:"AI generates news briefs and data journalism quickly. Investigative, long-form, and on-the-ground journalism remains human.", learn:["Investigative journalism","Video/audio production","Audience building"], time:"3&#8211;6 years", survive:"Investigative journalist, podcast host, specialist video journalist" },
+  { title:"Radiologist", risk:65, cat:"Healthcare", trend:"changing", why:"AI diagnostic tools outperform humans on specific imaging tasks. Broad oversight and rare disease identification still needs expertise.", learn:["AI-augmented diagnostics","Rare disease specialisation","Interventional radiology"], time:"5&#8211;10 years", survive:"Interventional radiology, AI radiology QA, rare disease diagnosis" },
+  { title:"Real Estate Agent", risk:63, cat:"Property", trend:"changing", why:"AI handles valuations, search, and matching. The emotional, negotiation, and relationship side remains valuable.", learn:["Luxury real estate","Commercial property","Development consulting"], time:"4&#8211;8 years", survive:"Commercial real estate, luxury residential, property development" },
+  { title:"HR Manager (admin)", risk:62, cat:"HR", trend:"changing", why:"AI handles CV screening, scheduling, onboarding, and policy Q&A. Strategic HR &#8212; culture, talent development &#8212; is growing.", learn:["People analytics","Organisational design","DEI strategy"], time:"3&#8211;6 years", survive:"Chief People Officer track, people analytics, culture specialist" },
+  { title:"Stockbroker", risk:61, cat:"Finance", trend:"changing", why:"Algorithmic trading dominates markets. Retail brokers face commoditisation. Wealth management holds human value.", learn:["Wealth management","Alternative investments","Behavioural finance"], time:"3&#8211;7 years", survive:"Private wealth manager, alternatives specialist, family office advisor" },
+  { title:"Software Engineer (junior)", risk:55, cat:"Tech", trend:"changing", why:"AI coding assistants write boilerplate and debug rapidly. Engineers who understand systems design and can direct AI are safe.", learn:["System design","AI/ML engineering","Product thinking"], time:"3&#8211;8 years", survive:"Senior engineers, architects, and AI engineers are in massive demand" },
+  { title:"Marketing Manager", risk:52, cat:"Marketing", trend:"changing", why:"AI generates content and optimises campaigns. Strategy, brand, and creative direction remain human-led for now.", learn:["Brand strategy","AI marketing tools","Growth strategy"], time:"4&#8211;8 years", survive:"Brand director, growth lead, CMO track with AI fluency" },
+  { title:"Graphic Designer", risk:50, cat:"Creative", trend:"changing", why:"AI image generation is disrupting stock illustration and basic design. Conceptual, brand, and UX design remains in demand.", learn:["UX/UI design","Brand identity","Motion design"], time:"3&#8211;7 years", survive:"UX designer, brand identity specialist, art director" },
+  { title:"Teacher (K-12)", risk:45, cat:"Education", trend:"changing", why:"AI tutoring is effective for many subjects. Mentorship, social development, and classroom culture require humans deeply.", learn:["Learning design","AI tutoring tools","STEM specialisation"], time:"5&#8211;12 years", survive:"AI-augmented teaching, learning design, educational technology" },
+  { title:"Copywriter", risk:48, cat:"Creative", trend:"changing", why:"AI generates first drafts rapidly. Tone, brand voice, and originality still benefit from human craft and strategic judgement.", learn:["Content strategy","Brand voice development","UX writing"], time:"3&#8211;6 years", survive:"Brand strategist, UX writer, content director, niche expert" },
+  { title:"Insurance Agent", risk:46, cat:"Insurance", trend:"changing", why:"Underwriting AI is increasingly accurate. Complex commercial and specialist coverage still requires expert human judgement.", learn:["Risk management","Commercial insurance","Actuarial fundamentals"], time:"4&#8211;8 years", survive:"Commercial broker, risk consultant, corporate benefits advisor" },
+  { title:"Project Manager", risk:42, cat:"Management", trend:"stable", why:"AI automates timelines and reporting. Stakeholder management, ambiguity, and organisational politics need humans.", learn:["Strategic programme management","OKRs","AI project tools"], time:"5&#8211;10 years", survive:"Programme director, strategy lead, transformation manager" },
+  { title:"UX Designer", risk:30, cat:"Tech", trend:"growing", why:"AI tools assist but don't replace user research, empathy mapping, and designing for complex human behaviour.", learn:["Accessibility design","AI product design","Design systems"], time:"8&#8211;15 years", survive:"Strong demand as AI products need great human-centred design" },
+  { title:"Nurse", risk:25, cat:"Healthcare", trend:"growing", why:"Physical care, patient relationships, and emotional support are deeply human. AI augments but cannot replace bedside nursing.", learn:["AI health tools","Specialist nursing","Healthcare leadership"], time:"Long-term safe", survive:"One of the most resilient careers as global population ages" },
+  { title:"Psychologist / Therapist", risk:22, cat:"Healthcare", trend:"growing", why:"Therapeutic relationships and complex mental health care require deep empathy and clinical judgement AI cannot replicate.", learn:["AI mental health tools","Trauma specialisation","Teletherapy"], time:"Long-term safe", survive:"High demand &#8212; growing global mental health crisis reinforces value" },
+  { title:"Social Worker", risk:20, cat:"Social Services", trend:"stable", why:"Situations involving safeguarding, poverty, and trauma require human judgement, empathy, and legal authority.", learn:["Policy knowledge","Trauma-informed practice","Community development"], time:"Long-term safe", survive:"Essential public service role unlikely to be meaningfully automated" },
+  { title:"Surgeon", risk:18, cat:"Healthcare", trend:"stable", why:"Robotic surgery assists but surgeons make real-time complex decisions and bear professional accountability.", learn:["Robotic surgery training","Subspecialty expertise","AI-assisted imaging"], time:"Long-term safe", survive:"Highest-value, lowest-risk career in the long run" },
+  { title:"Software Engineer (senior)", risk:22, cat:"Tech", trend:"growing", why:"Senior engineers who architect systems and direct AI tools are in massive demand globally.", learn:["AI/ML systems","Platform engineering","Technical leadership"], time:"Long-term growth", survive:"AI creates more complex software &#8212; needs more senior engineers" },
+  { title:"AI/ML Engineer", risk:8, cat:"Tech", trend:"growing", why:"Building AI systems is one of the fastest growing and most resilient careers. Ironic, but true.", learn:["Deep learning","MLOps","LLM fine-tuning"], time:"10+ years growth", survive:"Core to the AI economy &#8212; very high demand across all sectors" },
+  { title:"Plumber", risk:12, cat:"Trades", trend:"stable", why:"Physical problem-solving in unpredictable environments is extremely hard to automate. Highly regulated.", learn:["Gas work certification","Underfloor heating","Drainage specialist"], time:"Long-term safe", survive:"Skilled trades are booming &#8212; shortage of tradespeople everywhere" },
+  { title:"Electrician", risk:11, cat:"Trades", trend:"growing", why:"Electrical work requires physical dexterity in complex environments and safety certification. Cannot be outsourced.", learn:["EV charging installation","Solar and renewables","Smart home systems"], time:"Long-term growth", survive:"EV boom and smart home expansion driving major demand" },
+  { title:"Physical Therapist", risk:15, cat:"Healthcare", trend:"growing", why:"Hands-on assessment, manual therapy, and personalised rehab require physical presence human touch can't replicate.", learn:["Sports performance","Neurological rehab","Telehealth PT"], time:"Long-term safe", survive:"Ageing global population drives continuously growing demand" },
+  { title:"Chef (head chef)", risk:16, cat:"Hospitality", trend:"stable", why:"Creativity, taste, cultural context, and the experience economy mean great food remains deeply human.", learn:["Food entrepreneurship","Fine dining","Menu development"], time:"Long-term safe", survive:"Experience economy protects high-end human culinary skill" },
+  { title:"Entrepreneur / Founder", risk:5, cat:"Business", trend:"growing", why:"AI is a massive tailwind for founders &#8212; it reduces build costs and enables small teams to do far more.", learn:["AI tools for startups","Product management","Growth"], time:"Major opportunity", survive:"AI is a superpower for entrepreneurs who learn to use it" },
+  { title:"Cybersecurity Analyst", risk:18, cat:"Tech", trend:"growing", why:"AI assists with threat detection, but human analysts respond to novel attacks and make strategic decisions.", learn:["Threat intelligence","Incident response","AI security tools"], time:"Long-term growth", survive:"AI creates new attack surfaces &#8212; cybersecurity demand grows with AI" },
+  { title:"Crisis Counsellor", risk:10, cat:"Social Services", trend:"growing", why:"High-stakes emotional support requires human empathy, authority, and presence. AI cannot be trusted here.", learn:["Crisis intervention","Trauma-informed care","Mental health first aid"], time:"Long-term safe", survive:"Global mental health crisis means this role is critically needed" },
+];
+
+const NEWS = [
+  { title:"GPT-5 to transform white-collar work, OpenAI says", excerpt:"The next generation of GPT models is expected to significantly change how knowledge workers complete tasks across legal, finance, and consulting.", source:"MIT Technology Review", time:"2 hours ago", cat:"jobs", emoji:"&#129302;", tag:"Jobs & Work", tc:"var(--orange)", featured:true, link:"https://www.technologyreview.com/" },
+  { title:"New UK law requires employers to disclose AI use in hiring", excerpt:"The Employment AI Transparency Act forces UK companies to tell candidates when AI is used to screen or rank job applications.", source:"BBC Technology", time:"5 hours ago", cat:"policy", emoji:"&#9878;&#65039;", tag:"Policy", tc:"var(--blue)", featured:true, link:"https://www.bbc.co.uk/news/technology" },
+  { title:"Amazon rolls out AI warehouse robots to 50 new sites", excerpt:"Fulfillment centre automation is accelerating, with Proteus and Sparrow robots deployed across Europe and North America.", source:"The Guardian", time:"1 day ago", cat:"jobs", emoji:"&#127981;", tag:"Jobs & Work", tc:"var(--orange)", featured:false, link:"https://www.theguardian.com/technology/artificialintelligenceai" },
+  { title:"The best free AI tools for upskilling in 2025", excerpt:"A curated list of free courses, tools, and communities for workers looking to build AI literacy without spending a fortune.", source:"The Verge", time:"1 day ago", cat:"learn", emoji:"&#127891;", tag:"Learning", tc:"var(--green)", featured:false, link:"https://www.theverge.com/ai-artificial-intelligence" },
+  { title:"Goldman Sachs: AI will replace 300 million jobs globally", excerpt:"Updated projections suggest automation risk is higher than 2023 estimates, particularly in administrative and service roles.", source:"Financial Times", time:"2 days ago", cat:"jobs", emoji:"&#128202;", tag:"Jobs & Work", tc:"var(--orange)", featured:false, link:"https://www.ft.com/artificial-intelligence" },
+  { title:"Anthropic releases Claude 4 &#8212; here's what changed", excerpt:"The latest model shows major improvements in reasoning and complex multi-step tasks. We break down what it means for workers.", source:"Wired", time:"3 days ago", cat:"tools", emoji:"&#10024;", tag:"New Tools", tc:"var(--purple)", featured:false, link:"https://www.wired.com/tag/artificial-intelligence/" },
+  { title:"California passes AI Worker Displacement Fund bill", excerpt:"The state will collect a levy from AI companies to fund retraining programmes for displaced workers. A first in the US.", source:"Bloomberg", time:"3 days ago", cat:"policy", emoji:"&#127963;&#65039;", tag:"Policy", tc:"var(--blue)", featured:false, link:"https://www.bloomberg.com/technology" },
+  { title:"How one nurse used AI to save 2 hours every day", excerpt:"A district nurse in Manchester shares how she uses AI tools to handle admin, freeing more time for patients.", source:"ainxiety community", time:"4 days ago", cat:"learn", emoji:"&#127973;", tag:"Community", tc:"var(--green)", featured:false, link:"" },
+];
+
+const FORUM_POSTS = [
+  { user:"Jamie_Reeves", av:"J", avbg:"#7c5cfc", meta:"Jobs & Work &#183; 2 hours ago", title:"My entire customer service team was replaced this week. Here's what actually happened.", excerpt:"I've been in customer support for 8 years. On Monday we were told our team of 14 would be 'restructured' to 4 people using an AI platform. I want to share what it felt like and what I'm doing next...", tag:"Personal Story", tc:"var(--purple)", tb:"rgba(155,125,255,0.3)", likes:284, replies:67, cat:"stories" },
+  { user:"techworker_anon", av:"T", avbg:"#5b9bd5", meta:"AI Tools &#183; 4 hours ago", title:"Honest review: I tried to use AI to replace my own job. Here's how far I got.", excerpt:"As a junior data analyst I decided to see if ChatGPT + a few automations could literally do my job. The results were more unsettling than I expected...", tag:"AI Tools", tc:"var(--blue)", tb:"rgba(91,155,213,0.3)", likes:196, replies:43, cat:"tools" },
+  { user:"Amanda_W", av:"A", avbg:"#4caf87", meta:"Learning &#183; 6 hours ago", title:"I'm a 47-year-old bookkeeper. I just finished my first Python course. It's not too late.", excerpt:"Everyone keeps saying it's too late to reskill at my age. I started learning Python 3 months ago and I just automated half my own job &#8212; which means my employer now sees me as the AI person, not the replaceable one.", tag:"Inspiring", tc:"var(--green)", tb:"rgba(76,175,135,0.3)", likes:512, replies:88, cat:"learn" },
+  { user:"GaryD_Writes", av:"G", avbg:"#e87c3e", meta:"Jobs Discussion &#183; 8 hours ago", title:"Journalists: are you seeing AI bylines at your publication yet?", excerpt:"We've had two 'AI-assisted' pieces published this month at my outlet. Management says it's just for data summaries but I have a feeling this is just the start...", tag:"Jobs & Work", tc:"var(--orange)", tb:"rgba(232,124,62,0.3)", likes:94, replies:52, cat:"jobs" },
+  { user:"Priya_L", av:"P", avbg:"#d4a839", meta:"News Discussion &#183; 12 hours ago", title:"The Goldman 300M jobs stat keeps circling &#8212; but nobody reads the small print", excerpt:"Everyone shares the scary headline but the report actually says most of these are partial automations, not full replacements. We need to talk about the nuance more...", tag:"News Discussion", tc:"var(--yellow)", tb:"rgba(212,168,57,0.3)", likes:147, replies:39, cat:"news" },
+  { user:"ElecNorth_UK", av:"E", avbg:"#4caf87", meta:"Good News &#183; 1 day ago", title:"Trades people: stop worrying. My order book is the fullest it's been in 12 years.", excerpt:"Everyone's scared of AI taking jobs. Meanwhile I'm booked up 4 months ahead installing EV chargers and smart home tech. The irony is AI is creating more electrical work. Here's why...", tag:"Good News", tc:"var(--green)", tb:"rgba(76,175,135,0.3)", likes:341, replies:76, cat:"jobs" },
+];
+
+const TUTORIALS = [
+  { icon:"&#9889;", title:"Use ChatGPT to write a CV that beats AI screening systems", dur:"15 min read", level:"Beginner" },
+  { icon:"&#128260;", title:"Automate your email inbox in 1 hour with Make and Claude", dur:"25 min tutorial", level:"Intermediate" },
+  { icon:"&#128202;", title:"How to read AI research papers without a PhD", dur:"20 min read", level:"Beginner" },
+  { icon:"&#128188;", title:"Career pivot guide: From accountant to financial data analyst", dur:"45 min guide", level:"Beginner" },
+  { icon:"&#127919;", title:"Prompt engineering masterclass: 10x better results from AI", dur:"1 hour course", level:"Intermediate" },
+  { icon:"&#128736;&#65039;", title:"Build your first no-code automation &#8212; complete walkthrough", dur:"35 min tutorial", level:"Beginner" },
+  { icon:"&#129504;", title:"What the AI research actually says vs. the scary headlines", dur:"20 min read", level:"Beginner" },
+  { icon:"&#128241;", title:"The 10 AI tools every knowledge worker should try right now", dur:"10 min read", level:"Beginner" },
+];
+
+
+/* ================================================
+   NAVIGATION
+================================================ */
+let currentPage = 'home';
+let newsLoaded = false;
+
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+  const navOrder = ['home','risk','news','learn','forum'];
+  const idx = navOrder.indexOf(page);
+  document.querySelectorAll('.nav-btn')[idx]?.classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+  currentPage = page;
+  if (page === 'news' && !newsLoaded) loadNews();
+  if (page === 'risk') renderJobsGrid('all');
+  if (page === 'home') { renderRiskPreview(); renderCharts(); }
+  if (page === 'forum') { closeThread(); loadThreads(_forumCategory); }
+}
+
+/* ================================================
+   RISK HELPERS
+================================================ */
+function rc(risk) { return risk>=80?'red': risk>=60?'orange': risk>=35?'yellow': 'green'; }
+function rcolor(risk) { return `var(--${rc(risk)})`; }
+function rlabel(risk) { return risk>=80?'&#128308; Critical': risk>=60?'&#128992; High': risk>=35?'&#128993; Medium': '&#128994; Lower risk'; }
+
+/* ================================================
+   JOB SEARCH
+================================================ */
+const jobSearch = document.getElementById('job-search');
+const dropdown  = document.getElementById('search-dropdown');
+
+jobSearch.addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  if (q.length < 2) { dropdown.style.display='none'; return; }
+  const matches = JOBS.filter(j => j.title.toLowerCase().includes(q)).slice(0,6);
+  if (!matches.length) { dropdown.style.display='none'; return; }
+  dropdown.innerHTML = matches.map(j => {
+    const cl = rc(j.risk);
+    return `<div class="sdrop-item" onclick="pickJob('${j.title.replace(/'/g,"\\'")}')">
+      <span>${j.title}</span>
+      <span class="sdrop-badge pill-${cl}">${j.risk}%</span>
+    </div>`;
+  }).join('');
+  dropdown.style.display = 'block';
+});
+jobSearch.addEventListener('keydown', e => { if (e.key==='Enter') doSearch(); if(e.key==='Escape') dropdown.style.display='none'; });
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) dropdown.style.display='none'; });
+
+function pickJob(title) { jobSearch.value=title; dropdown.style.display='none'; doSearch(); }
+function doSearch() {
+  const q = jobSearch.value.toLowerCase().trim();
+  if (!q) return;
+  dropdown.style.display='none';
+  let job = JOBS.find(j => j.title.toLowerCase()===q) || JOBS.find(j => j.title.toLowerCase().includes(q));
+  if (!job) { toast('Job not found &#8212; try browsing the list below.'); return; }
+  showRiskResult(job);
+}
+
+function showRiskResult(job) {
+  const cl = rc(job.risk);
+  const col = rcolor(job.risk);
+  const el = document.getElementById('risk-result');
+  el.innerHTML = `
+    <div class="rr-card">
+      <div class="rr-header">
+        <div>
+          <div class="rr-title">${job.title}</div>
+          <div class="rr-cat">${job.cat} &#183; ${job.trend==='declining'?'&#128201; Declining':job.trend==='growing'?'&#128200; Growing':'&#8596;&#65039; Changing'}</div>
+        </div>
+        <div class="rr-badge pill-${cl}" style="border:1.5px solid;letter-spacing:-2px">${job.risk}%</div>
+      </div>
+      <div class="rr-bar-label"><span>${rlabel(job.risk)}</span><span style="color:${col};font-weight:700">${job.risk}%</span></div>
+      <div class="rr-bar-track"><div class="rr-bar-fill bg-${cl}" id="rr-bar" style="width:0%"></div></div>
+      <div class="rr-meta">
+        <div class="rr-meta-item"><span class="l">Timeframe</span><span class="v">&#9201; ${job.time}</span></div>
+        <div class="rr-meta-item"><span class="l">Trend</span><span class="v">${job.trend==='declining'?'&#128201; Declining':job.trend==='growing'?'&#128200; Growing':'&#8596;&#65039; Changing'}</span></div>
+        <div class="rr-meta-item"><span class="l">Category</span><span class="v">${job.cat}</span></div>
+      </div>
+    </div>
+    <div class="rr-section">
+      <h3>&#128172; Why this score?</h3>
+      <p>${job.why}</p>
+    </div>
+    <div class="rr-section">
+      <h3>&#128737;&#65039; How to stay relevant</h3>
+      <p>${job.survive}</p>
+    </div>
+    <div class="rr-section">
+      <h3>&#128218; Skills to build now</h3>
+      <div class="learn-chips">${job.learn.map(s=>`<span class="learn-chip" onclick="goto('learn')">${s}</span>`).join('')}</div>
+    </div>
+  `;
+  el.classList.add('show');
+  setTimeout(() => { document.getElementById('rr-bar').style.width = job.risk+'%'; }, 80);
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function filterJobs(level, btn) {
+  document.querySelectorAll('.rfilter').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderJobsGrid(level);
+}
+
+function renderJobsGrid(filter) {
+  let jobs = [...JOBS].sort((a,b)=>b.risk-a.risk);
+  if (filter!=='all') {
+    const r = {critical:[80,100],high:[60,79],medium:[35,59],low:[0,34]};
+    const [mn,mx] = r[filter];
+    jobs = jobs.filter(j=>j.risk>=mn&&j.risk<=mx);
+  }
+  document.getElementById('jobs-grid').innerHTML = jobs.map(j => `
+    <div class="job-card before-${rc(j.risk)}" onclick="pickJob('${j.title.replace(/'/g,"\\'")}');document.querySelector('.search-wrap').scrollIntoView({behavior:'smooth'})">
+      <div class="jc-title">${j.title}</div>
+      <div class="jc-cat">${j.cat}</div>
+      <div class="jc-risk-row">
+        <span class="jc-risk-n" style="color:${rcolor(j.risk)}">${j.risk}%</span>
+        <div class="jc-risk-bar"><div class="jc-risk-fill bg-${rc(j.risk)}" style="width:${j.risk}%"></div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ================================================
+   RISK PREVIEW HOME
+================================================ */
+function renderRiskPreview() {
+  const picks = ['Data Entry Clerk','Nurse','Accountant','Electrician','Journalist (general)','AI/ML Engineer','Customer Service Rep','Plumber','Copywriter','Software Engineer (senior)'];
+  const grid = document.getElementById('risk-preview-grid');
+  if (!grid) return;
+  grid.innerHTML = picks.map(t=>{
+    const j = JOBS.find(x=>x.title===t);
+    if (!j) return '';
+    return `<div class="risk-prev" onclick="goto('risk');setTimeout(()=>pickJob('${j.title.replace(/'/g,"\\'")}'),80)">
+      <div class="risk-prev-title">${j.title}</div>
+      <div class="risk-prev-score" style="color:${rcolor(j.risk)}">${j.risk}%</div>
+      <div class="risk-prev-bar"><div class="risk-prev-fill bg-${rc(j.risk)}" style="width:${j.risk}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ================================================
+   CHARTS HOME
+================================================ */
+function renderCharts() {
+  const sector = [
+    {l:"Finance & Banking",v:76},{l:"Administrative",v:72},{l:"Retail & Sales",v:65},
+    {l:"Media & Content",v:60},{l:"Legal Services",v:55},{l:"Healthcare",v:38},
+    {l:"Education",v:32},{l:"Skilled Trades",v:15},
+  ];
+  const adoption = [
+    {l:"Financial Services",v:89},{l:"Technology",v:85},{l:"Media",v:78},
+    {l:"Retail",v:66},{l:"Manufacturing",v:62},{l:"Healthcare",v:54},
+    {l:"Education",v:43},{l:"Construction",v:28},
+  ];
+  function renderBarChart(data, id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = data.map(d => `<div class="bar-row">
+      <div class="bar-label">${d.l}</div>
+      <div class="bar-track"><div class="bar-fill bg-${rc(d.v)}" data-w="${d.v}%" style="width:0%"></div></div>
+      <div class="bar-pct" style="color:${rcolor(d.v)}">${d.v}%</div>
+    </div>`).join('');
+    setTimeout(() => el.querySelectorAll('[data-w]').forEach(b => b.style.width=b.dataset.w), 150);
+  }
+  renderBarChart(sector, 'chart-sector');
+  renderBarChart(adoption, 'chart-adoption');
+}
+
+/* ================================================
+   NEWS
+================================================ */
+let _allNews = [];
+let _newsRefreshTimer = null;
+
+async function loadNews(silent) {
+  if (!silent) newsLoaded = true;
+  const feeds = [
+    // Top AI newsletters & writers
+    { url:'https://www.bensbites.com/feed', name:"Ben's Bites", emoji:'&#127828;' },
+    { url:'https://importai.substack.com/feed', name:'Import AI', emoji:'&#129504;' },
+    { url:'https://jack-clark.net/feed/', name:'Jack Clark', emoji:'&#128301;' },
+    { url:'https://theneurondaily.com/feed', name:'The Neuron', emoji:'&#9889;' },
+    { url:'https://tldr.tech/ai/rss', name:'TLDR AI', emoji:'&#128232;' },
+    // General AI & tech news
+    { url:'https://feeds.feedburner.com/TechCrunch/AI', name:'TechCrunch', emoji:'&#128640;' },
+    { url:'https://www.technologyreview.com/feed/', name:'MIT Tech Review', emoji:'&#128300;' },
+    { url:'https://www.theverge.com/ai-artificial-intelligence/rss/index.xml', name:'The Verge', emoji:'&#127760;' },
+    { url:'https://feeds.arstechnica.com/arstechnica/technology-lab', name:'Ars Technica', emoji:'&#128736;&#65039;' },
+    // Government, law & policy
+    { url:'https://feeds.bbci.co.uk/news/technology/rss.xml', name:'BBC Technology', emoji:'&#128225;' },
+    { url:'https://www.theguardian.com/technology/artificialintelligenceai/rss', name:'The Guardian', emoji:'&#128478;&#65039;' },
+    { url:'https://www.politico.eu/feed/', name:'Politico EU', emoji:'&#127466;&#127482;' },
+    { url:'https://www.wired.com/feed/tag/artificial-intelligence/latest/rss', name:'WIRED', emoji:'&#128161;' },
+    { url:'https://rss.app/feeds/tAgz1bIBFxgMvEPO.xml', name:'UK Gov AI', emoji:'&#127963;&#65039;' },
+    { url:'https://crsreports.congress.gov/product/rss?productType=R&term=artificial+intelligence', name:'US Congress', emoji:'&#127963;&#65039;' },
+  ];
+
+  // Keyword &#8594; category mapping
+  function categorise(text) {
+    const t = (text||'').toLowerCase();
+    if (/\bjob|work|employ|laid.?off|redundan|workforce|worker|career|hire|fired|salary|labour|labor|automat/i.test(t)) return {cat:'jobs',tag:'Jobs & Work',tc:'var(--yellow)',emoji:'&#128188;'};
+    if (/\bpolic|regulat|govern|law|ban|eu ai|act|congress|parliament|legal|rule|rights/i.test(t)) return {cat:'policy',tag:'Policy',tc:'var(--green)',emoji:'&#9878;&#65039;'};
+    if (/\bcourse|learn|skill|train|educat|upskill|school|study|student|university/i.test(t)) return {cat:'learn',tag:'Learning',tc:'var(--blue)',emoji:'&#129504;'};
+    return {cat:'tools',tag:'AI Tools',tc:'var(--purple)',emoji:'&#129302;'};
+  }
+
+  let live = [];
+  const promises = feeds.map(feed =>
+    fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=5`, { signal: AbortSignal.timeout(6000) })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        (d.items||[]).slice(0,4).forEach((item, idx) => {
+          const titleAndDesc = (item.title||'') + ' ' + (item.description||'');
+          const { cat, tag, tc, emoji } = categorise(titleAndDesc);
+          live.push({
+            title: item.title,
+            excerpt: (item.description||'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim().slice(0,200)+'&#8230;',
+            source: feed.name,
+            time: timeAgo(new Date(item.pubDate)),
+            link: item.link,
+            cat, tag, tc,
+            emoji: feed.emoji,
+            featured: live.length < 2, // first 2 live items become featured
+            live: true,
+          });
+        });
+      })
+      .catch(()=>{})
+  );
+  await Promise.allSettled(promises);
+
+  // Deduplicate by title similarity
+  const seen = new Set();
+  live = live.filter(a => {
+    const key = a.title.toLowerCase().slice(0,40);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Sort: live first, then static
+  _allNews = [...live, ...NEWS.map(n=>({...n,featured:false}))];
+  renderNews(_allNews, 'all', live.length > 0);
+
+  // Auto-refresh every 30 minutes while user is on news page
+  if (!_newsRefreshTimer) {
+    _newsRefreshTimer = setInterval(() => {
+      if (currentPage === 'news') loadNews(true);
+    }, 30 * 60 * 1000);
+  }
+}
+
+function timeAgo(d) {
+  const s = Math.floor((Date.now()-d)/1000);
+  if (s<3600) return Math.floor(s/60)+' min ago';
+  if (s<86400) return Math.floor(s/3600)+' hr ago';
+  return Math.floor(s/86400)+' days ago';
+}
+
+function renderNews(articles, filter, hasLive) {
+  document.getElementById('news-loading').classList.add('hidden');
+  document.getElementById('news-container').classList.remove('hidden');
+  const status = document.getElementById('rss-status');
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  status.innerHTML = hasLive
+    ? `<span class="rss-dot" style="background:var(--green)"></span> Live news &#183; Updated ${now} &#183; <button onclick="loadNews(true)" style="background:none;border:none;color:var(--accent-2);cursor:pointer;font-size:12px;padding:0;text-decoration:underline">Refresh</button>`
+    : '<span class="rss-dot" style="background:var(--yellow)"></span> Curated articles &#183; Live RSS connects when hosted online';
+
+  let filtered = filter==='all' ? articles : articles.filter(a=>a.cat===filter);
+  const featured = filtered.filter(a=>a.featured);
+  const rest     = filtered.filter(a=>!a.featured);
+  const sidebar  = articles.filter(a=>!a.featured).slice(0,7);
+
+  document.getElementById('news-main').innerHTML =
+    featured.map(a=>`<div class="news-card news-card-featured" onclick="${a.link?`window.open('${a.link}','_blank')`:''}">
+      <div class="news-thumb">${a.emoji}</div>
+      <div class="news-body">
+        <span class="news-tag" style="background:rgba(255,255,255,0.07);color:${a.tc}">${a.tag}</span>
+        <div class="news-title">${a.title}</div>
+        <div class="news-excerpt">${a.excerpt}</div>
+        <div class="news-meta"><span class="source">${a.source}</span><span>&#183;</span><span>${a.time}</span>${a.live?'<span>&#183; &#128308; Live</span>':''}</div>
+      </div>
+    </div>`).join('')
+    + rest.map(a=>`<div class="news-card" onclick="${a.link?`window.open('${a.link}','_blank')`:''}">
+      <div class="news-body">
+        <span class="news-tag" style="background:rgba(255,255,255,0.07);color:${a.tc}">${a.tag}</span>
+        <div class="news-title-sm">${a.title}</div>
+        <div class="news-excerpt">${a.excerpt}</div>
+        <div class="news-meta"><span class="source">${a.source}</span><span>&#183;</span><span>${a.time}</span>${a.live?'<span>&#183; &#128308; Live</span>':''}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('news-sidebar').innerHTML =
+    `<div style="font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Also trending</div>
+    ${sidebar.map(a=>`<div class="news-sidebar-card" onclick="${a.link?`window.open('${a.link}','_blank')`:''}">
+      <div class="nsc-icon">${a.emoji}</div>
+      <div><div class="nsc-title">${a.title}</div><div class="nsc-meta">${a.source} &#183; ${a.time}</div></div>
+    </div>`).join('')}
+    <div style="margin-top:20px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">&#128236; Weekly digest</div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:13px">Best AI + jobs news, every week. Free.</div>
+      <button onclick="openAuth('signup')" style="width:100%;padding:10px;background:var(--accent);color:#000;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">Subscribe free &#8594;</button>
+    </div>`;
+  window._allNews = articles;
+}
+
+function filterNews(f,btn) {
+  document.querySelectorAll('.nfilter').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if (window._allNews) renderNews(window._allNews, f, false);
+}
+
+/* ================================================
+   FORUM
+================================================ */
+const CAT_META = {
+  jobs:     { label: 'Jobs & Moves',      emoji: '&#128188;', color: 'var(--blue)',   bg: 'var(--blue-s)'      },
+  stories:  { label: 'Personal Stories',  emoji: '&#128100;', color: 'var(--purple)', bg: 'var(--purple-s)'    },
+  learning: { label: 'Learning Together', emoji: '&#129504;', color: 'var(--green)',  bg: 'var(--green-s)'     },
+  tools:    { label: 'AI Tools',          emoji: '&#129302;', color: 'var(--accent)', bg: 'var(--accent-glow)' },
+  general:  { label: 'General',           emoji: '&#128161;', color: 'var(--text-2)', bg: 'rgba(255,255,255,0.05)' },
+};
+let _forumCategory = 'all';
+let _currentThreadId = null;
+
+function avatarColor(str) {
+  const colors = ['#e87c3e','#5b9bd5','#9b7dff','#4caf87','#e8a045','#f05a5a'];
+  let h = 0; for (const c of (str||'?')) h = (h*31 + c.charCodeAt(0)) & 0xffffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadThreads(category) {
+  _forumCategory = category || 'all';
+  const el = document.getElementById('forum-posts');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-3);font-size:14px">Loading&#8230;</div>';
+  if (!sb) { el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-3)">Connect Supabase to enable the forum.</div>'; return; }
+  let q = sb.from('threads').select('*').is('deleted_at', null).order('created_at', { ascending: false });
+  if (category && category !== 'all') q = q.eq('category', category);
+  const { data, error } = await q;
+  if (error) { el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--red)">Failed to load threads.</div>'; return; }
+  if (!data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-3)"><div style="font-size:40px;margin-bottom:16px">&#128172;</div><div style="font-size:15px;font-weight:600;margin-bottom:8px">No threads yet</div><div style="font-size:13px">Be the first to start a conversation!</div></div>';
+    return;
+  }
+  el.innerHTML = data.map(t => {
+    const cat = CAT_META[t.category] || CAT_META.general;
+    const name = t.author_name || (t.author_email ? t.author_email.split('@')[0] : 'Anonymous');
+    const bg = avatarColor(name);
+    const excerpt = t.content ? escHtml(t.content.slice(0,160)) + (t.content.length > 160 ? '&hellip;' : '') : '';
+    return '<div class="forum-post" onclick="openThread(\'' + t.id + '\')">' +
+      '<div class="fp-top">' +
+        '<div class="fp-avatar" style="background:' + bg + '">' + name.charAt(0).toUpperCase() + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="fp-meta">' + escHtml(name) + ' &middot; ' + timeAgo(t.created_at) + '</div>' +
+          '<div class="fp-title">' + escHtml(t.title) + '</div>' +
+        '</div>' +
+        '<span class="fp-tag" style="color:' + cat.color + ';border-color:' + cat.color + ';background:' + cat.bg + ';white-space:nowrap;margin-left:10px">' + cat.emoji + ' ' + cat.label + '</span>' +
+      '</div>' +
+      (excerpt ? '<div class="fp-excerpt">' + excerpt + '</div>' : '') +
+      '<div class="fp-footer">' +
+        '<span>&#9650; ' + (t.upvotes_count || 0) + '</span>' +
+        '<span>&#128172; ' + (t.reply_count || 0) + ' ' + (t.reply_count === 1 ? 'reply' : 'replies') + '</span>' +
+        '<span style="margin-left:auto;color:var(--accent-2);font-size:12px">Read more &#8594;</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+function filterForum(cat, el) {
+  document.querySelectorAll('.fn-item').forEach(i => i.classList.remove('on'));
+  el.classList.add('on');
+  loadThreads(cat);
+}
+
+async function openThread(threadId) {
+  _currentThreadId = threadId;
+  document.getElementById('forum-list-view').style.display = 'none';
+  document.getElementById('forum-thread-view').style.display = 'block';
+  document.getElementById('thread-detail-content').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-3)">Loading&#8230;</div>';
+  document.getElementById('thread-replies-content').innerHTML = '';
+  const [{ data: thread }, { data: posts }] = await Promise.all([
+    sb.from('threads').select('*').eq('id', threadId).single(),
+    sb.from('posts').select('*').is('deleted_at', null).eq('thread_id', threadId).order('created_at', { ascending: true })
+  ]);
+  if (!thread) { document.getElementById('thread-detail-content').innerHTML = '<div style="color:var(--red)">Thread not found.</div>'; return; }
+  const cat = CAT_META[thread.category] || CAT_META.general;
+  const name = thread.author_name || (thread.author_email ? thread.author_email.split('@')[0] : 'Anonymous');
+  const bg = avatarColor(name);
+  document.getElementById('thread-detail-content').innerHTML =
+    '<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
+        '<span class="fp-tag" style="color:' + cat.color + ';border-color:' + cat.color + ';background:' + cat.bg + ';margin:0">' + cat.emoji + ' ' + cat.label + '</span>' +
+        '<span style="font-size:12px;color:var(--text-3)">' + timeAgo(thread.created_at) + '</span>' +
+      '</div>' +
+      '<h2 style="font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:14px;line-height:1.3">' + escHtml(thread.title) + '</h2>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
+        '<div class="fp-avatar" style="background:' + bg + ';width:28px;height:28px;font-size:11px">' + name.charAt(0).toUpperCase() + '</div>' +
+        '<span style="font-size:13px;color:var(--text-2);font-weight:600">' + escHtml(name) + '</span>' +
+      '</div>' +
+      '<div style="font-size:15px;color:var(--text-2);line-height:1.75;white-space:pre-wrap">' + escHtml(thread.content) + '</div>' +
+      '<div style="margin-top:20px">' +
+        '<button onclick="upvoteThread(\'' + thread.id + '\')" style="background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-pill);padding:7px 16px;color:var(--text-1);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">&#9650; <span id="upvote-thread-count">' + (thread.upvotes_count || 0) + '</span> Upvote</button>' +
+      '</div>' +
+    '</div>';
+  const repliesEl = document.getElementById('thread-replies-content');
+  if (!posts || !posts.length) {
+    repliesEl.innerHTML = '<div style="color:var(--text-3);font-size:14px;padding:16px 0">No replies yet — be the first!</div>';
+  } else {
+    repliesEl.innerHTML = posts.map(function(p) {
+      const pName = p.author_name || (p.author_email ? p.author_email.split('@')[0] : 'Anonymous');
+      return '<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px 24px;margin-bottom:10px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+          '<div class="fp-avatar" style="background:' + avatarColor(pName) + ';width:28px;height:28px;font-size:11px">' + pName.charAt(0).toUpperCase() + '</div>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--text-1)">' + escHtml(pName) + '</span>' +
+          '<span style="font-size:12px;color:var(--text-3)">' + timeAgo(p.created_at) + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px;color:var(--text-2);line-height:1.7;white-space:pre-wrap">' + escHtml(p.content) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  var replyForm = document.getElementById('thread-reply-form');
+  var replyCta  = document.getElementById('thread-reply-cta');
+  if (currentUser) { replyForm.style.display = 'block'; replyCta.style.display = 'none'; }
+  else             { replyForm.style.display = 'none';  replyCta.style.display = 'block'; }
+  window.scrollTo(0, 0);
+}
+
+function closeThread() {
+  _currentThreadId = null;
+  document.getElementById('forum-thread-view').style.display = 'none';
+  document.getElementById('forum-list-view').style.display = 'block';
+}
+
+async function upvoteThread(threadId) {
+  if (!currentUser) { openAuth('signup'); return; }
+  var countEl = document.getElementById('upvote-thread-count');
+  var res = await sb.from('upvotes').select('id').eq('user_id', currentUser.id).eq('thread_id', threadId).maybeSingle();
+  if (res.data) {
+    await sb.from('upvotes').delete().eq('id', res.data.id);
+    if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+  } else {
+    await sb.from('upvotes').insert({ user_id: currentUser.id, thread_id: threadId });
+    if (countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+  }
+}
+
+async function submitReply() {
+  if (!currentUser || !_currentThreadId) return;
+  var ta = document.getElementById('reply-textarea');
+  var content = ta.value.trim();
+  if (!content) { toast('Please write something first.'); return; }
+  var btn = document.getElementById('reply-submit-btn');
+  btn.disabled = true; btn.textContent = 'Posting…';
+  var name = (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
+  var err = (await sb.from('posts').insert({ thread_id: _currentThreadId, user_id: currentUser.id, content: content, author_name: name, author_email: currentUser.email })).error;
+  btn.disabled = false; btn.textContent = 'Post reply →';
+  if (err) { toast('Failed to post reply. Try again.'); return; }
+  ta.value = '';
+  toast('Reply posted!');
+  openThread(_currentThreadId);
+}
+
+function openNewThread() {
+  openGenModal('Start a thread',
+    '<div class="fg"><label>Title</label><input class="fi" id="nt-title" placeholder="What\'s on your mind?" /></div>' +
+    '<div class="fg"><label>Category</label><select class="fsel" id="nt-cat">' +
+      '<option value="general">&#128161; General</option>' +
+      '<option value="jobs">&#128188; Jobs &amp; Moves</option>' +
+      '<option value="stories">&#128100; Personal Stories</option>' +
+      '<option value="learning">&#129504; Learning Together</option>' +
+      '<option value="tools">&#129302; AI Tools</option>' +
+    '</select></div>' +
+    '<div class="fg"><label>Your post</label><textarea class="fta" id="nt-body" rows="5" placeholder="Share what\'s going on, ask a question, or start a discussion…"></textarea></div>' +
+    '<button class="fsub" id="nt-submit" onclick="submitNewThread()">Post to community &#8594;</button>'
+  );
+}
+
+async function submitNewThread() {
+  if (!currentUser) return;
+  var title    = (document.getElementById('nt-title') ? document.getElementById('nt-title').value : '').trim();
+  var content  = (document.getElementById('nt-body')  ? document.getElementById('nt-body').value  : '').trim();
+  var category = document.getElementById('nt-cat') ? document.getElementById('nt-cat').value : 'general';
+  if (!title)   { toast('Please add a title.'); return; }
+  if (!content) { toast('Please write something.'); return; }
+  var btn = document.getElementById('nt-submit');
+  btn.disabled = true; btn.textContent = 'Posting…';
+  var name = (currentUser.user_metadata && currentUser.user_metadata.name) || currentUser.email.split('@')[0] || null;
+  var res = await sb.from('threads').insert({ user_id: currentUser.id, title: title, content: content, category: category, author_name: name, author_email: currentUser.email }).select().single();
+  if (res.error) { btn.disabled = false; btn.textContent = 'Post to community →'; toast('Failed to post. Try again.'); return; }
+  closeOverlay('gen-overlay');
+  toast('Thread posted!');
+  if (res.data) openThread(res.data.id); else loadThreads(_forumCategory);
+}
+
+async function forumWaitlist() { /* replaced by real forum */ }
+
+async function learnWaitlist() {
+  const name  = document.getElementById('learn-waitlist-name').value.trim();
+  const email = document.getElementById('learn-waitlist-email').value.trim();
+  const job   = document.getElementById('learn-waitlist-job').value.trim();
+  const btn   = document.getElementById('learn-waitlist-btn');
+  const msg   = document.getElementById('learn-waitlist-msg');
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    toast('Please enter a valid email address.');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Saving&#8230;';
+  try {
+    const { error } = await _sb.from('waitlist').upsert(
+      { email, name: name||null, job: job||null, source: 'learn' },
+      { onConflict: 'email' }
+    );
+    if (error) throw error;
+    btn.style.display = 'none';
+    msg.style.display = 'block';
+    document.getElementById('learn-waitlist-name').disabled = true;
+    document.getElementById('learn-waitlist-email').disabled = true;
+    document.getElementById('learn-waitlist-job').disabled = true;
+  } catch(e) {
+    btn.style.display = 'none';
+    msg.style.display = 'block';
+  }
+}
+
+function openNewPost() { requireAuth(openNewThread); }
+
+/* ================================================
+   TUTORIALS
+================================================ */
+function renderTutorials() {
+  const lvColors = {Beginner:['var(--green-s)','var(--green)'],Intermediate:['var(--yellow-s)','var(--yellow)'],Advanced:['var(--orange-s)','var(--orange)']};
+  document.getElementById('tutorial-list').innerHTML = TUTORIALS.map(t=>{
+    const [bg,col] = lvColors[t.level]||lvColors.Beginner;
+    return `<div class="tut-item" onclick="toast('Tutorials launching soon! Join to get early access.')">
+      <div class="tut-icon">${t.icon}</div>
+      <div style="flex:1">
+        <div class="tut-title">${t.title}</div>
+        <div class="tut-meta"><span>${t.dur}</span><span style="padding:2px 8px;border-radius:100px;background:${bg};color:${col};font-weight:700">${t.level}</span></div>
+      </div>
+      <div class="tut-arrow">&#8250;</div>
+    </div>`;
+  }).join('');
+}
+
+/* ================================================
+   AUTH MODAL
+================================================ */
+function openAuth(mode) {
+  clearAuthMessages();
+  switchAuth(mode);
+  document.getElementById('auth-overlay').classList.add('open');
+}
+
+function switchAuth(mode) {
+  const isSignup = mode==='signup';
+  document.getElementById('auth-modal-title').textContent = isSignup ? 'Create your account' : 'Welcome back';
+  document.getElementById('auth-modal-sub').textContent  = isSignup ? 'Free forever. No spam, ever.' : 'Sign in to your ainxiety account.';
+  document.getElementById('auth-form-signup').classList.toggle('hidden', !isSignup);
+  document.getElementById('auth-form-login').classList.toggle('hidden', isSignup);
+  clearAuthMessages();
+}
+
+/* ================================================
+   GENERIC MODAL
+================================================ */
+function openGenModal(title, body) {
+  document.getElementById('gen-title').textContent = title;
+  document.getElementById('gen-body').innerHTML = body;
+  document.getElementById('gen-overlay').classList.add('open');
+}
+
+/* ================================================
+   LEGAL MODALS
+================================================ */
+function openLegal(type) {
+  const content = {
+    terms: `<h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Terms &amp; Conditions</h2>
+    <p style="font-size:12px;color:var(--text-3);margin-bottom:20px">Last updated: April 2026</p>
+    <div style="font-size:14px;color:var(--text-2);line-height:1.8;display:flex;flex-direction:column;gap:18px">
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">1. About ainxiety</strong>ainxiety ("we", "us", "our") is an informational platform providing job risk assessments, curated news, educational content, and community features. We are not a financial advisor, careers advisor, or legal advisor. All content is provided for informational purposes only.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">2. Use of the service</strong>You may use ainxiety for personal, non-commercial purposes. You agree not to: misuse the platform, submit false information, harass other users, or attempt to access our systems without authorisation. We reserve the right to suspend accounts that violate these terms.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">3. User accounts</strong>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information when registering. We may terminate accounts that violate our community guidelines.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">4. Our content</strong>Job risk scores and assessments are estimates based on publicly available research and are not guarantees of future employment outcomes. They should not be used as the sole basis for career decisions. Always seek qualified professional advice for important career or financial decisions.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">5. User-generated content</strong>By posting in our community forum, you grant ainxiety a non-exclusive licence to display your content on our platform. You are responsible for ensuring your posts do not infringe third-party rights or violate applicable laws.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">6. Limitation of liability</strong>ainxiety is provided "as is". To the fullest extent permitted by law, we exclude liability for any loss or damage arising from your use of the platform. We do not guarantee accuracy, completeness, or suitability of any content for your purposes.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">7. Changes to terms</strong>We may update these terms from time to time. Continued use of ainxiety following notification of changes constitutes acceptance of the updated terms.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">8. Governing law</strong>These terms are governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">9. Contact</strong>For questions about these terms, email: hellothinkfields@gmail.com</div>
+    </div>`,
+
+    privacy: `<h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Privacy Policy</h2>
+    <p style="font-size:12px;color:var(--text-3);margin-bottom:20px">Last updated: April 2026 &#183; We comply with UK GDPR and the Data Protection Act 2018.</p>
+    <div style="font-size:14px;color:var(--text-2);line-height:1.8;display:flex;flex-direction:column;gap:18px">
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">1. What data we collect</strong>When you create an account: your name, email address, and optionally your job title or industry. When you use the platform: pages visited, search queries (job titles you search), and community posts. We do not collect sensitive personal data (health, financial, or biometric information).</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">2. Why we collect it</strong>To create and manage your account; to personalise your experience; to send you the weekly digest (if you subscribe); to improve the platform and fix bugs; to prevent abuse and ensure security.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">3. How we store it</strong>Your data is stored securely using Supabase (a Postgres database with row-level security). Passwords are hashed using bcrypt and are never stored in plain text. Data is stored in EU data centres.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">4. Data sharing</strong>We do not sell your data to third parties. We do not share your data with advertisers. We may share anonymised, aggregated data (e.g. "the most-searched jobs this week") publicly. We use Supabase as our data processor &#8212; their privacy policy applies to data stored in their systems.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">5. Your rights (UK GDPR)</strong>You have the right to: access the data we hold about you; correct inaccurate data; request deletion of your data ("right to be forgotten"); object to processing; data portability. To exercise any of these rights, email: hellothinkfields@gmail.com</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">6. Cookies</strong>We use strictly necessary cookies to keep you signed in. With your consent, we use analytics cookies to understand how people use ainxiety. See our Cookie Policy for details.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">7. Data retention</strong>We retain your account data for as long as your account is active. If you delete your account, your personal data is removed within 30 days. Anonymised usage data may be retained indefinitely.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">8. Contact &amp; complaints</strong>Contact our data controller at: hellothinkfields@gmail.com. You have the right to lodge a complaint with the ICO (ico.org.uk) if you believe we have breached your data rights.</div>
+    </div>`,
+
+    cookies: `<h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Cookie Policy</h2>
+    <p style="font-size:12px;color:var(--text-3);margin-bottom:20px">Last updated: April 2026</p>
+    <div style="font-size:14px;color:var(--text-2);line-height:1.8;display:flex;flex-direction:column;gap:18px">
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">What are cookies?</strong>Cookies are small text files stored on your device when you visit a website. They help websites remember who you are and how you use them.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">Cookies we use</strong>
+      <div style="background:var(--bg-1);border-radius:var(--r);padding:14px;margin-top:10px;display:flex;flex-direction:column;gap:10px">
+        <div><span style="color:var(--text-1);font-weight:600">Strictly necessary</span> &#8212; These cookies are required for ainxiety to function. They keep you signed in and protect against cross-site attacks. You cannot opt out of these. Duration: session or up to 1 year.</div>
+        <div><span style="color:var(--text-1);font-weight:600">Analytics (with consent)</span> &#8212; We use privacy-friendly analytics (e.g. Plausible) to understand which features are used. No personal data is shared with third-party analytics providers. Duration: up to 1 year.</div>
+        <div><span style="color:var(--text-1);font-weight:600">Preference cookies (with consent)</span> &#8212; These remember your display preferences. Duration: up to 1 year.</div>
+      </div>
+    </div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">No advertising cookies</strong>We do not use cookies for advertising, retargeting, or profiling. We do not share cookie data with ad networks.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">Managing cookies</strong>You can withdraw consent at any time by clicking "Decline" in the cookie banner (which reappears after clearing your cookies). You can also manage cookies in your browser settings. Note that disabling strictly necessary cookies may break sign-in.</div>
+    <div><strong style="color:var(--text-1);display:block;margin-bottom:4px">Questions</strong>Email us at: hellothinkfields@gmail.com</div>
+    </div>`,
+  };
+  openGenModal(type==='terms'?'Terms & Conditions':type==='privacy'?'Privacy Policy':'Cookie Policy', content[type]||'');
+}
+
+/* ================================================
+   OVERLAY HELPERS
+================================================ */
+function closeOverlay(id) { document.getElementById(id)?.classList.remove('open'); }
+function closeOnBg(e,id) { if(e.target.id===id) closeOverlay(id); }
+
+/* ================================================
+   COOKIE CONSENT
+================================================ */
+function checkCookieConsent() {
+  const pref = localStorage.getItem('ainxiety_cookie_pref');
+  if (!pref) setTimeout(() => document.getElementById('cookie-banner').classList.add('show'), 1500);
+}
+function setCookiePref(val) {
+  localStorage.setItem('ainxiety_cookie_pref', val);
+  document.getElementById('cookie-banner').classList.remove('show');
+  if (val==='accepted') toast('Cookies accepted. Thank you!');
+}
+
+/* ================================================
+   TOAST
+================================================ */
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+/* ================================================
+   MOBILE NAV
+================================================ */
+function toggleMobile() {
+  const nl = document.querySelector('.nav-links');
+  if (nl.style.display==='flex') {
+    nl.style.display='';
+  } else {
+    nl.style.cssText='display:flex;flex-direction:column;position:absolute;top:60px;left:0;right:0;background:var(--bg-1);border-bottom:1px solid var(--border);padding:10px;gap:3px;z-index:900';
+  }
+}
+
+/* ================================================
+   INIT
+================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+  checkCookieConsent();
+  renderRiskPreview();
+  renderCharts();
+
+  // Stagger hero stats
+  document.querySelectorAll('.stat-n').forEach((el,i) => {
+    el.style.opacity='0'; el.style.transform='translateY(8px)';
+    setTimeout(()=>{ el.style.transition='all 0.45s'; el.style.opacity='1'; el.style.transform='translateY(0)'; }, 200+i*80);
+  });
+});
+</script>
+</body>
+</html>
